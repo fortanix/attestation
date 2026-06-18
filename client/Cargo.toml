@@ -1,7 +1,11 @@
 [package]
 name = "client"
+description = "A program used to establish trust on the machine it runs and initialize the a baremetal sev-snp VM to start a trusted workload."
 version = "0.1.0"
-edition = "2024"
+authors = ["Fortanix, Inc."]
+edition = "2021"
+license = "MPL-2.0"
+repository = "https://github.com/fortanix/attestation"
 
 [dependencies]
 der = { workspace = true }
