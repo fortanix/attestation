@@ -1,3 +1,16 @@
 [workspace]
 resolver = "2"
-members = []
+members = ["attestation","client"]
+
+[workspace.dependencies]
+der = "0.7.9"
+env_logger = "0.11.5"
+hyper = { version = "0.10.16", default-features = false }
+log = "0.4"
+nvml = { package = "nvml-wrapper", git = "https://github.com/fortanix/nvml-wrapper.git" }
+nvml-wrapper = { git = "https://github.com/fortanix/nvml-wrapper.git" }
+pkix = "0.2.5"
+serde = "1.0"
+thiserror = "1.0.69"
+tokio = "=1.36"
+vsock = "0.5"

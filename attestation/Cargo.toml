@@ -1,0 +1,13 @@
+[package]
+name = "attestation"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+nvidia-evidence = ["nvml"]
+
+[dependencies]
+log = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+nvml = { workspace = true, optional = true }
+thiserror = { workspace = true }
