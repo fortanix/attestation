@@ -1,0 +1,17 @@
+[package]
+name = "attestation"
+description = "Attestation functionality for dcap, nvidia, sev, and tpm-snp attestation"
+version = "0.1.0"
+authors = ["Fortanix, Inc."]
+edition = "2021"
+license = "MPL-2.0"
+repository = "https://github.com/fortanix/attestation"
+
+[features]
+nvidia-evidence = ["nvml"]
+
+[dependencies]
+log = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+nvml = { workspace = true, optional = true }
+thiserror = { workspace = true }
