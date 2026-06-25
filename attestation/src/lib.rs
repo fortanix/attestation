@@ -7,3 +7,6 @@
 pub mod sev;
 #[cfg(feature = "tdx")]
 pub mod tdx;
+
+#[cfg(feature = "nvidia")]
+pub mod nvidia;

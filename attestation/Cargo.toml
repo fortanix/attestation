@@ -26,7 +26,8 @@ tdx-ql = { workspace = true, optional = true }
 iocuddle = { workspace = true, optional = true }
 
 [features]
-nvidia-evidence = ["nvml"]
+nvidia = []
+nvidia-evidence = ["nvidia", "nvml"] # enables the module used to collect nvidia attestation evidence
 tdx = []
 tdx-guest = ["tdx","dep:tdx-ql"]
 sev = []
