@@ -3,7 +3,7 @@
 |* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
 |* the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use crate::tdx::model::{
+use crate::tdx::{
     AttestationErr, ReportDataV1, TdxReportMeasurements, TdxReportType, TdxReportVersion1,
     TeeReportMac,
 };
@@ -68,7 +68,7 @@ pub type PackedTdxReportGuestV1<TCP> = PackedTdxReportGuest<TdxReportVersion1, T
 #[cfg(test)]
 mod tests {
     use crate::tdx::guest::PackedTdxReportGuestV1;
-    use crate::tdx::model::{TdxReportMeasurements, TdxReportVersion1, TeeReportMac};
+    use crate::tdx::{TdxReportMeasurements, TdxReportVersion1, TeeReportMac};
     use der::Sequence;
     use pkix::{FromBer, ToDer};
 
