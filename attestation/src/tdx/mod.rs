@@ -169,7 +169,7 @@ impl TdxReportType for TdxReportVersion1 {
     fn generate_report(report_data: &[u8; 64]) -> Result<Self::ReportType, AttestationErr> {
         use tdx_ql::tdx_ioctl;
 
-        let report = tdx_ioctl::get_report(report_data.clone())
+        let report = tdx_ioctl::get_report(*report_data)
             .map_err(|e| AttestationErr::FailedObtainingTdReport(e.to_string()))?;
 
         Ok(report)
