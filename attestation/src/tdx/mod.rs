@@ -115,9 +115,9 @@ pub trait TdxReportType {
     type TdInfoType: Clone + AsRef<[u8]>;
 
     fn accepted_versions() -> &'static [TdxReportTypeVersion];
-    fn td_info_from_report<'a>(report: &'a Self::ReportType) -> &'a Self::TdInfoType;
-    fn tee_tcb_info_from_report<'a>(report: &'a Self::ReportType) -> &'a Self::TeeTcbInfoType;
-    fn report_mac_from_report<'a>(report: &'a Self::ReportType) -> &'a ReportMacStruct;
+    fn td_info_from_report(report: &Self::ReportType) -> &Self::TdInfoType;
+    fn tee_tcb_info_from_report(report: &Self::ReportType) -> &Self::TeeTcbInfoType;
+    fn report_mac_from_report(report: &Self::ReportType) -> &ReportMacStruct;
     fn tee_tcb_info_from_slice(slice: &[u8]) -> Option<Self::TeeTcbInfoType>;
     fn td_info_from_slice(slice: &[u8]) -> Option<Self::TdInfoType>;
 
@@ -153,15 +153,15 @@ impl TdxReportType for TdxReportVersion1 {
         &VERSION
     }
 
-    fn td_info_from_report<'a>(report: &'a Self::ReportType) -> &'a Self::TdInfoType {
+    fn td_info_from_report(report: &Self::ReportType) -> &Self::TdInfoType {
         &report.td_info
     }
 
-    fn tee_tcb_info_from_report<'a>(report: &'a Self::ReportType) -> &'a Self::TeeTcbInfoType {
+    fn tee_tcb_info_from_report(report: &Self::ReportType) -> &Self::TeeTcbInfoType {
         &report.tee_tcb_info
     }
 
-    fn report_mac_from_report<'a>(report: &'a Self::ReportType) -> &'a ReportMacStruct {
+    fn report_mac_from_report(report: &Self::ReportType) -> &ReportMacStruct {
         &report.report_mac
     }
 
