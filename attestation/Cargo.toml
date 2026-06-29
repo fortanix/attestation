@@ -7,11 +7,22 @@ edition = "2021"
 license = "MPL-2.0"
 repository = "https://github.com/fortanix/attestation"
 
+[dependencies]
+der = { workspace = true, features = ["alloc", "derive", "oid", "pem"] }
+log = { workspace = true }
+mbedtls = { workspace = true, features = ["std", "time"] }
+nvml = { workspace = true, optional = true }
+pkix = {workspace = true}
+serde = { workspace = true, features = ["derive"] }
+sgx-isa = { workspace = true, default-features = true }
+sgx_pkix = {workspace = true}
+thiserror = { workspace = true }
+yasna = { workspace = true, features = ["num-bigint", "bit-vec"] }
+
+[target.'cfg(not(target_env = "sgx"))'.dependencies]
+tdx-ql = { workspace = true, optional = true }
+
 [features]
 nvidia-evidence = ["nvml"]
-
-[dependencies]
-log = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-nvml = { workspace = true, optional = true }
-thiserror = { workspace = true }
+tdx = []
+tdx-guest = ["tdx","dep:tdx-ql"]
