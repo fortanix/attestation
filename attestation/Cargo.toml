@@ -26,3 +26,7 @@ tdx-ql = { workspace = true, optional = true }
 nvidia-evidence = ["nvml"]
 tdx = []
 tdx-guest = ["tdx","dep:tdx-ql"]
+
+[[example]]
+name = "tdreport_tool"
+path = "src/tdx/tests/tdreport_tool.rs"
