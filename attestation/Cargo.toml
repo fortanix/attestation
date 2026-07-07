@@ -18,15 +18,23 @@ sgx-isa = { workspace = true, default-features = true }
 sgx_pkix = {workspace = true}
 thiserror = { workspace = true }
 yasna = { workspace = true, features = ["num-bigint", "bit-vec"] }
+once_cell = { workspace = true }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
 tdx-ql = { workspace = true, optional = true }
+# Used for generating reports on SNP, does not compile properly on SGX
+iocuddle = { workspace = true, optional = true }
 
 [features]
 nvidia-evidence = ["nvml"]
 tdx = []
 tdx-guest = ["tdx","dep:tdx-ql"]
+sev-guest = ["dep:iocuddle"]
 
 [[example]]
 name = "tdreport_tool"
 path = "src/tdx/tests/tdreport_tool.rs"
+required-features = ["tdx-guest"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_env, values("fortanixvme"))'] }
