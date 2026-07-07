@@ -29,7 +29,8 @@ iocuddle = { workspace = true, optional = true }
 nvidia-evidence = ["nvml"]
 tdx = []
 tdx-guest = ["tdx","dep:tdx-ql"]
-sev-guest = ["dep:iocuddle"]
+sev = []
+sev-guest = ["sev", "dep:iocuddle"]
 
 [[example]]
 name = "tdreport_tool"
