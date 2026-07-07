@@ -8,6 +8,7 @@ license = "MPL-2.0"
 repository = "https://github.com/fortanix/attestation"
 
 [dependencies]
+b64-ct = { workspace = true }
 der = { workspace = true, features = ["alloc", "derive", "oid", "pem"] }
 log = { workspace = true }
 mbedtls = { workspace = true, features = ["std", "time"] }
