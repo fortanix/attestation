@@ -5,7 +5,7 @@
 Please run
 
 ```bash
-cargo clippy
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 ```
 
 at the repository [root](.) prior to creating a PR, so that
