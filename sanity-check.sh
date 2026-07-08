@@ -9,10 +9,8 @@ cargo build --bins --all-features
 cargo build --examples
 cargo test --all-features
 
-#pushd "${script_dir}/attestation" 1>/dev/null || exit
 cargo clippy --workspace --all-targets --all-features -- -D warnings \
   || echo "Please correct any changes requested by \"cargo clippy\" to resolve linting issues"
-#popd 1>/dev/null || exit
 
 # Run a sanity check on formatting
 cargo fmt --check --all --verbose \
