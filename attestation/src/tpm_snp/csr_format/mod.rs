@@ -3,7 +3,7 @@
 |* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
 |* the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-//! ASN.1 Type definitions according to <https://fortanix.atlassian.net/wiki/spaces/A1/pages/3358982544/CCM+AMD+SEV-SNP+TPM+Platform+API+Changes>
+//! ASN.1 Type definitions
 
 pub mod baremetal_snp;
 
@@ -126,7 +126,6 @@ pub struct TpmQuoteV1 {
     pub ak_pub: OctetString,
 }
 
-/// Ref: <https://fortanix.atlassian.net/wiki/spaces/EN/pages/2262761700/Attestation+Data+Formats#AMD-SEV-SNP-Attestation-Types>
 /// ```asn1
 /// AmdSevAttestationV1 ::= SEQUENCE {
 ///     attestation_report       OCTET STRING,

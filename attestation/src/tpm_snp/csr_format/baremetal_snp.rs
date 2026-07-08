@@ -14,7 +14,6 @@ use der::{Decode, Encode};
 /// AmdSevAttestationBaremetalV1 ::= SEQUENCE {
 ///     -- see the ATTESTATION_REPORT structure defined in https://www.amd.com/system/files/TechDocs/56860.pdf
 ///     attestation_report       OCTET STRING,
-///     -- see https://fortanix.atlassian.net/wiki/spaces/A1/pages/3358982544/CCM+AMD+SEV-SNP+TPM+Platform+API+Changes
 ///     coprocessors             CoprocessorAttestationSetV1
 /// }
 /// ```

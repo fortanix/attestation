@@ -199,7 +199,6 @@ impl TdxReportType for TdxReportVersion1 {
  *    -- measurements from TDREPORT, including tee_tcb_info and td_info data structure, packed in binary
  *    tee_tcb_info            OCTET STRING,
  *    td_info                 OCTET STRING,
- *    -- see https://fortanix.atlassian.net/wiki/spaces/A1/pages/3358982544/CCM+AMD+SEV-SNP+TPM+Platform+API+Changes
  *    coprocessors            CoprocessorAttestationSetV1
  * }
  */
