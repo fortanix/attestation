@@ -14,7 +14,7 @@ use super::report::{Report, REPORT_SIZE, USER_DATA_SIZE};
 use super::AttestationCoreErr;
 
 /// SNP Guest ioctls are in group 0x53; which is 'S'.
-const SNP: Group = Group::new('S' as u8);
+const SNP: Group = Group::new(b'S');
 
 /// An enum capturing all the things that can go wrong with requesting the
 /// attestation
@@ -134,8 +134,10 @@ mod preview {
     pub(crate) fn request_report(
         user_data: &[u8; USER_DATA_SIZE],
     ) -> Result<ReportResponse, SevGuestErr> {
-        let mut request = ReportRequest::default();
-        request.user_data = user_data.clone();
+        let mut request = ReportRequest {
+            user_data: *user_data,
+            ..Default::default()
+        };
         let mut response = ReportResponse::default();
         let mut message = GuestRequestIoctl {
             req_msg_type: SNP_MSG_REPORT_REQ,
@@ -197,7 +199,7 @@ mod upstream {
     }
 
     /// SNP Guest ioctls are in group 0x53; which is 'S'.
-    const SNP: Group = Group::new('S' as u8);
+    const SNP: Group = Group::new(b'S');
 
     /// The only ioctl we need for now is the report:
     const SNP_GET_REPORT: Ioctl<WriteRead, &GuestRequestIoctl> = unsafe { SNP.write_read(0x0) };
