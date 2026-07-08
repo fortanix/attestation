@@ -89,6 +89,7 @@ dependencies = [
 name = "attestation"
 version = "0.1.0"
 dependencies = [
+ "b64-ct",
  "der",
  "iocuddle",
  "log 0.4.32",

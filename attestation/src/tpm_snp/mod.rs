@@ -3,16 +3,8 @@
 |* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
 |* the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#[cfg(feature = "sev")]
-pub mod sev;
-
-#[cfg(feature = "tdx")]
-pub mod tdx;
-
-#[cfg(feature = "nvidia")]
-pub mod nvidia;
-
-#[cfg(feature = "tpm-snp")]
-pub mod tpm_snp;
-
-pub mod utils;
+pub mod csr_format;
+#[cfg(feature = "tpm-snp-evidence")]
+pub mod generate_evidence;
+#[cfg(feature = "tpm-snp-pkix-compat")]
+pub mod pkix_compat;

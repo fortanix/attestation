@@ -25,6 +25,8 @@ use sgx_isa::ReportMacStruct;
 use sgx_pkix::oid;
 use thiserror::Error;
 
+use crate::utils::compute_sha256;
+
 #[derive(Debug, Error)]
 pub enum AttestationErr {
     #[error("data received is the wrong size; expected={0}; actual={1}")]
@@ -344,13 +346,6 @@ where
     pub spki: OctetStringRef<'a>,
     pub coprocessors: TCP,
     pub appconfig_id: Option<OctetStringRef<'b>>,
-}
-
-fn compute_sha256(data: &[u8]) -> mbedtls::Result<[u8; 32]> {
-    use mbedtls::hash::{Md, Type};
-    let mut output = [0u8; 32];
-    let _ = Md::hash(Type::Sha256, data, &mut output)?;
-    Ok(output)
 }
 
 #[allow(unused)]

@@ -9,8 +9,9 @@ cargo build --bins --all-features
 cargo build --examples
 cargo test --all-features
 
-cargo clippy --workspace --all-targets --all-features -- -D warnings \
-  || echo "Please correct any changes requested by \"cargo clippy\" to resolve linting issues"
+clippy_cmd="cargo clippy --workspace --all-targets --all-features -- -D warnings"
+${clippy_cmd} \
+  || echo "Please correct any changes requested by \"${clippy_cmd}\" to resolve linting issues"
 
 # Run a sanity check on formatting
 cargo fmt --check --all --verbose \
