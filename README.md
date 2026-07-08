@@ -1,3 +1,33 @@
+# Fortanix Attestation
+
+## Clippy
+
+Please run
+
+```bash
+cargo clippy
+```
+
+at the repository [root](.) prior to creating a PR, so that
+all lint checks are complete.
+
+## Formatting
+
+Please run
+
+```bash
+cargo fmt --all
+```
+
+at the repository [root](.) prior to creating a PR, so that
+all code formatting is consistent.
+
+## Sanity Check
+
+Please run [sanity-check.sh](./sanity-check.sh) prior to making
+any pull requests, to make sure that all features and tests compile
+and run correctly.
+
 # Contributing
 
 We gratefully accept bug reports and contributions from the community.
