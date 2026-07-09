@@ -34,8 +34,8 @@ tdx-guest = ["tdx","dep:tdx-ql"]
 sev = []
 sev-guest = ["sev", "dep:iocuddle"]
 tpm-snp = []
-tpm-snp-pkix-compat = ["sev"]
-tpm-snp-evidence = ["nvidia-evidence", "sev-guest"]
+tpm-snp-pkix-compat = ["tpm-snp", "sev"]
+tpm-snp-evidence = ["tpm-snp", "nvidia-evidence", "sev-guest"]
 
 [[example]]
 name = "tdreport_tool"
