@@ -28,7 +28,7 @@ use pkix::pem::{der_to_pem, pem_to_der, PEM_CERTIFICATE, PEM_CERTIFICATE_REQUEST
 use pkix::types::{Attribute, HasOid, TaggedDerValue};
 use pkix::{yasna, ToDer};
 
-use crate::certificate::AppCert;
+use crate::certificate::{AppCert, AppCertMetadata};
 use crate::error::Error::*;
 use crate::error::Result;
 use crate::utils::get_app_config_id;
@@ -90,17 +90,15 @@ impl NodeAgentClient {
 
 pub trait Attest {
     fn perform_local_attestation(
-        &mut self,
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
     ) -> Result<GetFortanixAttestationResponse>;
 
     fn attest_and_request_app_cert(
-        &mut self,
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
     ) -> Result<()> {
-        let local_attest_resp = self.perform_local_attestation(app_cert, node_agent_cli)?;
+        let local_attest_resp = Self::perform_local_attestation(app_cert, node_agent_cli)?;
         let attestation_cert = local_attest_resp
             .attestation_certificate
             .clone()
@@ -140,7 +138,6 @@ pub trait Attest {
 
 impl Attest for BaremetalSevSnp {
     fn perform_local_attestation(
-        &mut self,
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
     ) -> Result<GetFortanixAttestationResponse> {
@@ -156,14 +153,13 @@ impl Attest for BaremetalSevSnp {
                 .map_err(AttestErr)?;
 
         // Construct the local attestation CSR
-        let csr = self.get_local_attestation_csr(app_cert, &attestation_report, appconfig_id)?;
+        let csr = Self::get_local_attestation_csr(app_cert, &attestation_report, appconfig_id)?;
         node_agent_cli.get_fortanix_attestation(Some(csr), None)
     }
 }
 
 impl BaremetalSevSnp {
     fn get_local_attestation_csr(
-        &self,
         appcert: &mut AppCert,
         attestation_report: &AmdSevAttestationBaremetalV1,
         appconfig_id: Option<&[u8]>,
@@ -215,7 +211,6 @@ impl BaremetalSevSnp {
 
 impl BaremetalTdx {
     fn get_local_attestation_csr(
-        &self,
         appcert: &mut AppCert,
         tee_report_mac_der: Vec<u8>,
         tdx_report_der: Vec<u8>,
@@ -283,7 +278,6 @@ impl BaremetalTdx {
 }
 impl Attest for BaremetalTdx {
     fn perform_local_attestation(
-        &mut self,
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
     ) -> Result<GetFortanixAttestationResponse> {
@@ -332,7 +326,7 @@ impl Attest for BaremetalTdx {
         let tdx_report_der = tdx_report.to_der();
 
         // Construct the local attestation CSR
-        let csr = self.get_local_attestation_csr(
+        let csr = Self::get_local_attestation_csr(
             app_cert,
             tee_report_mac_der,
             tdx_report_der,
@@ -340,4 +334,29 @@ impl Attest for BaremetalTdx {
         )?;
         node_agent_cli.get_fortanix_attestation(Some(csr), None)
     }
+}
+
+/// Common function shared between binaries to set up and execute and attestation,
+/// and write the resulting private key and certificate to disk.
+pub fn run_client<T: Attest>() -> Result<()> {
+    // Initialize the app cert key and cert paths from environment variables
+    // Once the app cert is obtained, they key and cert will be written to disk
+    // be written on disk
+    let key_filename = std::env::var("APP_CERT_KEY_FILE_NAME").ok();
+    let cert_filename = std::env::var("APP_CERT_FILE_NAME").ok();
+    let app_cert_metadata =
+        AppCertMetadata::init(key_filename.as_deref(), cert_filename.as_deref())?;
+
+    // Initialize the RSA key pair used to request an app cert
+    let mut app_cert = AppCert::init()?;
+
+    let node_agent_cli = NodeAgentClient::init()?;
+
+    // If attestation succeeds, app_cert is populated with the certificate
+    T::attest_and_request_app_cert(&mut app_cert, &node_agent_cli)?;
+
+    // Write cert and key to disk
+    app_cert.write_to_fs(&app_cert_metadata)?;
+
+    Ok(())
 }
