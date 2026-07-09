@@ -8,11 +8,23 @@ license = "MPL-2.0"
 repository = "https://github.com/fortanix/attestation"
 
 [dependencies]
+attestation = { path = "../attestation", features = ["tdx-guest", "nvidia-evidence", "sev-guest", "tpm-snp-evidence", "tpm-snp-pkix-compat"] }
 der = { workspace = true }
+em-node-agent-client = { workspace = true }
 env_logger = { workspace = true }
+ftx-cert-build = { workspace = true, features = ["rsa", "mbedtls_adapter"] }
 hyper = { workspace = true }
 log = { workspace = true }
+mbedtls = { workspace = true, features = ["rdrand"] }
 pkix = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 vsock = { workspace = true }
+
+[[bin]]
+name = "attestation-client-sevsnp"
+path = "src/bin/attestation-client-sevsnp.rs"
+
+[[bin]]
+name = "attestation-client-tdx"
+path = "src/bin/attestation-client-tdx.rs"

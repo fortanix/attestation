@@ -5,8 +5,10 @@ members = ["attestation","client"]
 [workspace.dependencies]
 b64-ct = "0.1"
 der = "0.7.9"
+em-node-agent-client = "1.0.0"
 env_logger = "0.11.5"
 hyper = { version = "0.10.16", default-features = false }
+ftx-cert-build = { git = "ssh://git@github.com/fortanix/ftx-cert-build.git", branch = "pavan/RTE-1077" }
 iocuddle = "0.1"
 log = "0.4"
 mbedtls = { version = "0.13.4", default-features = false }
