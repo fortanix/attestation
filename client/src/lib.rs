@@ -92,13 +92,16 @@ pub trait Attest {
     fn perform_local_attestation(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
+        app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse>;
 
     fn attest_and_request_app_cert(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
+        app_config_id: Option<Vec<u8>>,
     ) -> Result<()> {
-        let local_attest_resp = Self::perform_local_attestation(app_cert, node_agent_cli)?;
+        let local_attest_resp =
+            Self::perform_local_attestation(app_cert, node_agent_cli, app_config_id)?;
         let attestation_cert = local_attest_resp
             .attestation_certificate
             .clone()
@@ -140,9 +143,14 @@ impl Attest for BaremetalSevSnp {
     fn perform_local_attestation(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
+        app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse> {
         // Check if appconfig_id is available
-        let appconfig_id_bind = get_app_config_id();
+        let appconfig_id_bind: Option<Vec<u8>> = if app_config_id.is_some() {
+            app_config_id
+        } else {
+            get_app_config_id()
+        };
         let appconfig_id: Option<&[u8]> = appconfig_id_bind.as_deref();
 
         // Compute the public key hash
@@ -280,9 +288,14 @@ impl Attest for BaremetalTdx {
     fn perform_local_attestation(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
+        app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse> {
         // Check if appconfig_id is available
-        let appconfig_id_bind = get_app_config_id();
+        let appconfig_id_bind: Option<Vec<u8>> = if app_config_id.is_some() {
+            app_config_id
+        } else {
+            get_app_config_id()
+        };
         let appconfig_id: Option<&[u8]> = appconfig_id_bind.as_deref();
 
         // Compute the public key hash
@@ -353,7 +366,7 @@ pub fn run_client<T: Attest>() -> Result<()> {
     let node_agent_cli = NodeAgentClient::init()?;
 
     // If attestation succeeds, app_cert is populated with the certificate
-    T::attest_and_request_app_cert(&mut app_cert, &node_agent_cli)?;
+    T::attest_and_request_app_cert(&mut app_cert, &node_agent_cli, None)?;
 
     // Write cert and key to disk
     app_cert.write_to_fs(&app_cert_metadata)?;
