@@ -4,10 +4,10 @@
 |* the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use client::error::Result;
-use client::{run_client, BaremetalTdx};
+use client::{run_client, BaremetalSevSnp};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    run_client::<BaremetalTdx>()
+    run_client::<BaremetalSevSnp>()
 }
