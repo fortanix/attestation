@@ -21,10 +21,10 @@ thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 vsock = { workspace = true }
 
-[[bin]]
+[[example]]
 name = "attestation-client-sevsnp"
-path = "src/bin/attestation-client-sevsnp.rs"
+path = "src/examples/attestation-client-sevsnp.rs"
 
-[[bin]]
+[[example]]
 name = "attestation-client-tdx"
-path = "src/bin/attestation-client-tdx.rs"
+path = "src/examples/attestation-client-tdx.rs"
