@@ -19,7 +19,7 @@ pub fn run_client<T: Attest>() -> Result<()> {
     let node_agent_cli = NodeAgentClient::init()?;
 
     // If attestation succeeds, app_cert is populated with the certificate
-    T::attest_and_request_app_cert(&mut app_cert, &node_agent_cli, None, None)?;
+    T::attest_and_request_app_cert(&mut app_cert, &node_agent_cli, None)?;
 
     // Write cert and key to disk
     app_cert.write_to_fs(&app_cert_metadata)?;
