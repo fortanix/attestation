@@ -3,18 +3,20 @@ resolver = "2"
 members = ["attestation","client"]
 
 [workspace.dependencies]
-b64-ct = "0.1"
+b64-ct = "0.1.3"
 der = "0.7.9"
+em-node-agent-client = "1.0.0"
 env_logger = "0.11.5"
 hyper = { version = "0.10.16", default-features = false }
+ftx-cert-build = { git = "https://github.com/fortanix/ftx-cert-build.git" }
 iocuddle = "0.1"
-log = "0.4"
+log = "0.4.33"
 mbedtls = { version = "0.13.4", default-features = false }
 nvml = { package = "nvml-wrapper", git = "https://github.com/fortanix/nvml-wrapper.git" }
 nvml-wrapper = { git = "https://github.com/fortanix/nvml-wrapper.git" }
 once_cell = "1.8"
 pkix = "0.2.5"
-serde = "1.0"
+serde = "1.0.228"
 sgx-isa = { version = "0.5.0", default-features = true }
 sgx_pkix = "0.3.0"
 tdx-ql = "0.1.0"

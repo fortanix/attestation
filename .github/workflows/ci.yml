@@ -10,6 +10,8 @@ on:
       - opened
       - synchronize
 
+permissions: {} # No permissions by default, individual jobs should set explicit permissions
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -21,9 +23,11 @@ jobs:
             cmake \
             libclang-dev
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7
+        with:
+          persist-credentials: false
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           targets: x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu
           toolchain: 1.92.0
@@ -38,3 +42,5 @@ jobs:
         run: cargo build --all-targets --all-features
       - name: Run tests
         run: cargo test --workspace --all-features
+    permissions:
+      contents: read
