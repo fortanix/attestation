@@ -92,7 +92,7 @@ dependencies = [
  "b64-ct",
  "der",
  "iocuddle",
- "log 0.4.32",
+ "log 0.4.33",
  "mbedtls",
  "nvml-wrapper",
  "once_cell",
@@ -168,7 +168,7 @@ dependencies = [
  "clang-sys",
  "lazy_static",
  "lazycell",
- "log 0.4.32",
+ "log 0.4.33",
  "peeking_take_while",
  "prettyplease",
  "proc-macro2",
@@ -294,7 +294,7 @@ dependencies = [
  "env_logger",
  "ftx-cert-build",
  "hyper",
- "log 0.4.32",
+ "log 0.4.33",
  "mbedtls",
  "pkix",
  "thiserror",
@@ -420,7 +420,7 @@ version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1bf3c259d255ca70051b30e2e95b5446cdb8949ac4cd22c0d7fd634d89f568e2"
 dependencies = [
- "log 0.4.32",
+ "log 0.4.33",
  "regex",
 ]
 
@@ -434,7 +434,7 @@ dependencies = [
  "anstyle",
  "env_filter",
  "humantime",
- "log 0.4.32",
+ "log 0.4.33",
 ]
 
 [[package]]
@@ -462,7 +462,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 [[package]]
 name = "ftx-cert-build"
 version = "0.1.0"
-source = "git+ssh://git@github.com/fortanix/ftx-cert-build.git#06884a5c9d32547bd2ae9d1c596814660a8d4e97"
+source = "git+https://github.com/fortanix/ftx-cert-build.git#67893e9c589b54dec891fdbfb5b3bfb7bc744502"
 dependencies = [
  "chrono",
  "mbedtls",
@@ -574,7 +574,7 @@ dependencies = [
  "core-foundation-sys",
  "iana-time-zone-haiku",
  "js-sys",
- "log 0.4.32",
+ "log 0.4.33",
  "wasm-bindgen",
  "windows-core",
 ]
@@ -689,14 +689,14 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
 dependencies = [
- "log 0.4.32",
+ "log 0.4.33",
 ]
 
 [[package]]
 name = "log"
-version = "0.4.32"
+version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "953f07c43838f8e6f9758cab68bf5bed85465e7587ebe0b823f1bcd81978ad3a"
+checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 
 [[package]]
 name = "matches"
