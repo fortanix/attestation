@@ -59,9 +59,18 @@ impl AppCert {
             .map(|names| names.split(',').map(|s| s.to_string()).collect())
     }
 
-    pub(crate) fn request_app_cert_csr(&mut self, attributes: Vec<Attribute>) -> Result<String> {
-        // Obtain domain names requested by the user
-        let alt_names = Self::get_alt_names().unwrap_or_default();
+    pub(crate) fn request_app_cert_csr(
+        &mut self,
+        attributes: Vec<Attribute>,
+        alt_names: Option<Vec<String>>,
+    ) -> Result<String> {
+        // If no alt names are given to the function,
+        // the APP_CERT_ALT_NAMES env var will be checked for these names
+        let alt_names = if let Some(names) = alt_names {
+            names
+        } else {
+            Self::get_alt_names().unwrap_or_default()
+        };
 
         let subject = match alt_names.first() {
             Some(domain) => NameBuilder::new().add_common_name(domain).build_name(),
