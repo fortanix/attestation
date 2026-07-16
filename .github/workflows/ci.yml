@@ -43,4 +43,4 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-features
     permissions:
-      id-token: read
+      contents: read
