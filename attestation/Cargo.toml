@@ -13,7 +13,6 @@ der = { workspace = true, features = ["alloc", "derive", "oid", "pem"] }
 log = { workspace = true }
 mbedtls = { workspace = true, features = ["std", "time"] }
 nvml = { workspace = true, optional = true }
-pcs = { workspace = true }
 pkix = {workspace = true}
 serde = { workspace = true, features = ["derive"] }
 sgx-isa = { workspace = true, default-features = true }

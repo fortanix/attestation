@@ -86,12 +86,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.104"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
-
-[[package]]
 name = "attestation"
 version = "0.1.0"
 dependencies = [
@@ -102,7 +96,6 @@ dependencies = [
  "mbedtls",
  "nvml-wrapper",
  "once_cell",
- "pcs",
  "pkix",
  "serde",
  "sgx-isa",
@@ -138,12 +131,6 @@ dependencies = [
  "rustc-demangle",
  "windows-link",
 ]
-
-[[package]]
-name = "base16"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d27c3610c36aee21ce8ac510e6224498de4228ad772a171ed65643a24693a5a8"
 
 [[package]]
 name = "base64"
@@ -309,7 +296,6 @@ dependencies = [
  "hyper",
  "log 0.4.33",
  "mbedtls",
- "pcs",
  "pkix",
  "thiserror 1.0.69",
  "tokio",
@@ -376,20 +362,6 @@ dependencies = [
  "darling_core",
  "quote",
  "syn 2.0.119",
-]
-
-[[package]]
-name = "dcap-ql"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0160891b3cde8afc32086697ac962051712cb7a17b421b8e097377784fae1b52"
-dependencies = [
- "anyhow",
- "byteorder",
- "lazy_static",
- "num-derive",
- "num-traits",
- "sgx-isa",
 ]
 
 [[package]]
@@ -926,20 +898,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
-dependencies = [
- "num-bigint",
- "num-complex",
- "num-integer",
- "num-iter",
- "num-rational",
- "num-traits",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -951,54 +909,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-complex"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
-dependencies = [
- "autocfg",
- "num-traits",
-]
-
-[[package]]
-name = "num-derive"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
 name = "num-integer"
 version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
 dependencies = [
- "num-traits",
-]
-
-[[package]]
-name = "num-iter"
-version = "0.1.46"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c92800bd69a1eac91786bcfe9da64a897eb72911b8dc3095decbd07429e8048b"
-dependencies = [
- "num-integer",
- "num-traits",
-]
-
-[[package]]
-name = "num-rational"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
-dependencies = [
- "autocfg",
- "num-bigint",
- "num-integer",
  "num-traits",
 ]
 
@@ -1087,28 +1002,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pcs"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d7e1eb07d038e18188022abb9c2ef52aea98e916b23bd9912b0dacd447185bd"
-dependencies = [
- "b64-ct",
- "base16",
- "chrono",
- "dcap-ql",
- "num",
- "percent-encoding 2.3.2",
- "pkix",
- "quick-error",
- "rustc-serialize",
- "serde",
- "serde_json",
- "sgx-isa",
- "sgx_pkix",
- "yasna 0.3.2",
-]
-
-[[package]]
 name = "peeking_take_while"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1128,12 +1021,6 @@ name = "percent-encoding"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
-
-[[package]]
-name = "percent-encoding"
-version = "2.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "pin-project-lite"
@@ -1302,12 +1189,6 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-
-[[package]]
-name = "rustc-serialize"
-version = "0.3.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe834bc780604f4674073badbad26d7219cadfb4a2275802db12cbae17498401"
 
 [[package]]
 name = "rustc_version"
@@ -1674,7 +1555,7 @@ checksum = "dd4e7c0d531266369519a4aa4f399d748bd37043b00bde1e4ff1f60a120b355a"
 dependencies = [
  "idna",
  "matches",
- "percent-encoding 1.0.1",
+ "percent-encoding",
 ]
 
 [[package]]

@@ -16,7 +16,6 @@ ftx-cert-build = { workspace = true, features = ["rsa", "mbedtls_adapter"] }
 hyper = { workspace = true }
 log = { workspace = true }
 mbedtls = { workspace = true, features = ["rdrand"] }
-pcs = { workspace = true }
 pkix = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
