@@ -14,6 +14,7 @@ log = "0.4"
 mbedtls = { version = "0.13", default-features = false }
 nvml = { package = "nvml-wrapper", git = "https://github.com/fortanix/nvml-wrapper.git" }
 nvml-wrapper = { git = "https://github.com/fortanix/nvml-wrapper.git" }
+pcs = "0.8"
 once_cell = "1.8"
 pkix = "0.2"
 serde = "1.0"
