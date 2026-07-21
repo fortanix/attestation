@@ -8,7 +8,7 @@ der = "0.7"
 em-node-agent-client = "1.0"
 env_logger = "0.11"
 hyper = { version = "0.10", default-features = false }
-ftx-cert-build = { git = "https://github.com/fortanix/ftx-cert-build.git" }
+ftx-cert-build = { git = "https://github.com/fortanix/ftx-cert-build.git", branch = "dlegalov/RTE-1101-use-open-source-attestation-crate" }
 iocuddle = "0.1"
 log = "0.4"
 mbedtls = { version = "0.13", default-features = false }
