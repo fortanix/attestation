@@ -8,6 +8,8 @@ pub mod certificate;
 pub mod error;
 pub mod utils;
 pub mod vsock_connector;
+use std::time::Duration;
+
 use attestation::nvidia::evidence::get_nvidia_evidence;
 use attestation::tdx::{
     PackedTdxReportGuestV1, TdxReportMeasurements, TdxReportVersion1, TeeReportMac,
@@ -20,7 +22,7 @@ use der::{Decode, Encode};
 use em_node_agent_client::models::{
     GetFortanixAttestationRequest, GetFortanixAttestationResponse, IssueCertificateRequest,
 };
-use em_node_agent_client::{CertificateApi, Client, EnclaveApi};
+use em_node_agent_client::{CertificateApi, Client, EnclaveApi, SystemApi};
 use ftx_cert_build::name_builder::NameBuilder;
 use ftx_cert_build::Csr;
 use log::{debug, info};
@@ -35,6 +37,8 @@ use crate::utils::get_app_config_id;
 use crate::vsock_connector::VsockConnector;
 pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = vsock::VMADDR_CID_HOST;
 const DEFAULT_NODE_AGENT_VSOCK_ADDR: &str = "http://0.0.0.0:40/";
+const MAX_RETRIES: usize = 10;
+const RETRY_DELAY: Duration = Duration::from_secs(1);
 
 fn hex_encode(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{:02x}", byte)).collect()
@@ -60,7 +64,38 @@ impl NodeAgentClient {
                 e
             ))
         })?;
-        Ok(NodeAgentClient { client })
+
+        for attempt in 1..=MAX_RETRIES {
+            match client.get_agent_version() {
+                Ok(version) => {
+                    info!(
+                        "Connected to Node Agent (version {}) after {} attempt(s)",
+                        version.version.unwrap_or_default(),
+                        attempt
+                    );
+
+                    return Ok(NodeAgentClient { client });
+                }
+                Err(err) if attempt < MAX_RETRIES => {
+                    info!(
+                        "Node Agent not reachable (attempt {}/{}): {:?}",
+                        attempt, MAX_RETRIES, err
+                    );
+
+                    std::thread::sleep(RETRY_DELAY);
+                }
+                Err(err) => {
+                    return Err(NACliErr(format!(
+                    "Node Agent is not reachable after {} attempts: {:?}. Is it installed correctly?",
+                    MAX_RETRIES,
+                    err
+                )));
+                }
+            }
+        }
+        return Err(NACliErr(format!(
+            "Node Agent is unreachable. Is it installed correctly?"
+        )));
     }
 
     pub(crate) fn get_fortanix_attestation(
