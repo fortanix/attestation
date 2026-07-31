@@ -60,7 +60,7 @@ impl NodeAgentClient {
         )
         .map_err(|e| {
             NACliErr(format!(
-                "unable to initialize node agent client connector: {:?}",
+                "Failed to initialize node agent client connector: {:?}",
                 e
             ))
         })?;
@@ -86,7 +86,7 @@ impl NodeAgentClient {
                 }
                 Err(err) => {
                     return Err(NACliErr(format!(
-                    "Node Agent is not reachable after {} attempts: {:?}. Is it installed correctly?",
+                    "Failed to reach node agent after {} attempts: {:?}. Is it installed correctly?",
                     MAX_RETRIES,
                     err
                 )));
@@ -94,7 +94,7 @@ impl NodeAgentClient {
             }
         }
         return Err(NACliErr(format!(
-            "Node Agent is unreachable. Is it installed correctly?"
+            "Fail to reach node agent. Is it installed correctly?"
         )));
     }
 
@@ -110,7 +110,7 @@ impl NodeAgentClient {
 
         self.client
             .get_fortanix_attestation(req)
-            .map_err(|e| NACliErr(format!("unable to get fortanix attestation: {:?}", e)))
+            .map_err(|e| NACliErr(format!("Failed to get fortanix attestation: {:?}", e)))
     }
 
     pub(crate) fn get_fortanix_certificate(&self, csr: String) -> Result<String> {
@@ -119,10 +119,10 @@ impl NodeAgentClient {
         let resp = self
             .client
             .issue_certificate(req)
-            .map_err(|e| NACliErr(format!("unable to issue certificate : {:?}", e)))?;
+            .map_err(|e| NACliErr(format!("Failed to request app certificate : {:?}", e)))?;
 
         resp.certificate.ok_or(NACliErr(
-            "certificate not available in issue cert response".into(),
+            "Failed to read certificate from fortanix response".into(),
         ))
     }
 }
