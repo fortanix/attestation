@@ -93,9 +93,9 @@ impl NodeAgentClient {
                 }
             }
         }
-        return Err(NACliErr(format!(
-            "Fail to reach node agent. Is it installed correctly?"
-        )));
+        Err(NACliErr(
+            "Fail to reach node agent. Is it installed correctly?".into(),
+        ))
     }
 
     pub(crate) fn get_fortanix_attestation(
