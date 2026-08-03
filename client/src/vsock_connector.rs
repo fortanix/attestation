@@ -66,7 +66,7 @@ impl NetworkConnector for VsockConnector {
         if scheme != "http" {
             return Err(hyper::Error::Io(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "VsockConnector only supports http scheme",
+                "Failed to connect - VsockConnector only supports http scheme",
             )));
         }
 

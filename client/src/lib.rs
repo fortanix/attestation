@@ -358,7 +358,7 @@ impl Attest for BaremetalTdx {
             Ok(evidences) => {
                 let coprocessor = CoprocessorAttestationV1::try_from(evidences).map_err(|e| {
                     ConversionErr(format!(
-                        "CoprocessorAttestationV1 from gpu evidence failed : {:?}",
+                        "Failed to get CoprocessorAttestationV1 from gpu evidence : {:?}",
                         e
                     ))
                 })?;
@@ -373,7 +373,7 @@ impl Attest for BaremetalTdx {
         let coprocessors_set: CoprocessorAttestationSetV1 =
             coprocessors.try_into().map_err(|e: der::Error| {
                 ConversionErr(format!(
-                    "Unable to create coprocessor set: {:?}",
+                    "Failed to parse CoprocessorAttestationSetV1: {:?}",
                     e.to_string()
                 ))
             })?;
