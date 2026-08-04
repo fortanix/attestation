@@ -76,7 +76,7 @@ impl NodeAgentClient {
 
                     return Ok(NodeAgentClient { client });
                 }
-                Err(err) if attempt < MAX_RETRIES => {
+                Err(err) => {
                     info!(
                         "Node Agent not reachable (attempt {}/{}): {:?}",
                         attempt, MAX_RETRIES, err
@@ -84,18 +84,12 @@ impl NodeAgentClient {
 
                     std::thread::sleep(RETRY_DELAY);
                 }
-                Err(err) => {
-                    return Err(NACliErr(format!(
-                    "failed to reach node agent after {} attempts: {:?}. Is it installed correctly?",
-                    MAX_RETRIES,
-                    err
-                )));
-                }
             }
         }
-        Err(NACliErr(
-            "Fail to reach node agent. Is it installed correctly?".into(),
-        ))
+        Err(NACliErr(format!(
+            "failed to reach node agent after {} attempts. Is it installed correctly?",
+            MAX_RETRIES
+        )))
     }
 
     pub(crate) fn get_fortanix_attestation(
