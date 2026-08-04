@@ -14,9 +14,9 @@ use crate::error::Result;
 
 pub fn extract_extensions_from_cert(pem_cert: &str) -> Result<Vec<Extension>> {
     let der_cert = pem_to_der(pem_cert, Some(PEM_CERTIFICATE))
-        .ok_or(CertErr("Failed to parse pem cert".into()))?;
+        .ok_or(CertErr("failed to parse pem cert".into()))?;
     let cert = GenericCertificate::from_der(&der_cert)
-        .map_err(|e| CertErr(format!("Failed to parse der cert : {:?}", e)))?;
+        .map_err(|e| CertErr(format!("failed to parse der cert : {:?}", e)))?;
     Ok(cert.tbscert.extensions)
 }
 
@@ -26,7 +26,7 @@ pub fn extract_oid_from_extension(extns: Vec<Extension>, oid: ObjectIdentifier) 
         .find(|ext| ext.oid == oid)
         .map(|ext| ext.value.clone())
         .ok_or(CertErr(format!(
-            "Failed to find oid {:?} in extensions",
+            "failed to find oid {:?} in extensions",
             oid
         )))
 }

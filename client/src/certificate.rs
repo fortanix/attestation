@@ -36,7 +36,7 @@ impl AppCert {
     fn create_cert_keypair() -> Result<Pk> {
         Pk::generate_rsa(&mut FtxRng, RSA_KEY_SIZE, RSA_EXPONENT).map_err(|e| {
             CryptoErr(format!(
-                "Failed to generate cert key pair : {:?}",
+                "failed to generate cert key pair : {:?}",
                 e.to_string()
             ))
         })
@@ -46,9 +46,9 @@ impl AppCert {
         let pub_key_der = self
             .key
             .write_public_der_vec()
-            .map_err(|_| AppCertErr("Failed to get public key der".to_string()))?;
+            .map_err(|_| AppCertErr("failed to get public key der".to_string()))?;
         compute_sha256(&pub_key_der)
-            .map_err(|_| AppCertErr("Failed to get public key hash".to_string()))
+            .map_err(|_| AppCertErr("failed to get public key hash".to_string()))
     }
 
     fn get_alt_names() -> Option<Vec<String>> {
@@ -71,12 +71,12 @@ impl AppCert {
         let pk_key = &mut self.key;
         let csr = Csr::mbedtls_crypto_builder()
             .with_self_signing_key(pk_key, pkix::types::RsaPkcs15(pkix::types::Sha256))
-            .map_err(|e| CryptoErr(format!("Failed to create crypto csr builder :{:?}", e)))?
+            .map_err(|e| CryptoErr(format!("failed to create crypto csr builder :{:?}", e)))?
             .with_subject(subject)
             .with_attributes(attributes)
-            .map_err(|e| AppCertErr(format!("Failed to add csr attributes : {:?}", e)))?
+            .map_err(|e| AppCertErr(format!("failed to add csr attributes : {:?}", e)))?
             .build_csr()
-            .map_err(|e| AppCertErr(format!("Failed to build app cert csr :{:?}", e)))?;
+            .map_err(|e| AppCertErr(format!("failed to build app cert csr :{:?}", e)))?;
 
         Ok(der_to_pem(csr.as_ref(), PEM_CERTIFICATE_REQUEST))
     }
@@ -86,34 +86,34 @@ impl AppCert {
         let key_pem = self
             .key
             .write_private_pem_string()
-            .map_err(|e| AppCertErr(format!("Failed to obtain key pem string : {:?}", e)))?;
+            .map_err(|e| AppCertErr(format!("failed to obtain key pem string : {:?}", e)))?;
 
         // If path doesn't exist, create it
         if fs::metadata(kpath).is_err() {
             if let Some(parent) = AsRef::<Path>::as_ref(&kpath).parent() {
                 fs::create_dir_all(parent)
-                    .map_err(|e| AppCertErr(format!("Failed to create key path : {:?}", e)))?;
+                    .map_err(|e| AppCertErr(format!("failed to create key path : {:?}", e)))?;
             }
         }
         fs::write(kpath, key_pem)
-            .map_err(|e| AppCertErr(format!("Failed to write key to key path : {:?}", e)))?;
+            .map_err(|e| AppCertErr(format!("failed to write key to key path : {:?}", e)))?;
 
         let cpath = Path::new(&app_cert_metadata.cert_path);
 
         let cert_pem = self
             .cert
             .as_ref()
-            .ok_or(AppCertErr("Failed to obtain app cert ref".to_string()))?;
+            .ok_or(AppCertErr("failed to obtain app cert ref".to_string()))?;
 
         // If path doesn't exist, create it
         if fs::metadata(cpath).is_err() {
             if let Some(parent) = AsRef::<Path>::as_ref(cpath).parent() {
                 fs::create_dir_all(parent)
-                    .map_err(|e| AppCertErr(format!("Failed to create cert path : {:?}", e)))?;
+                    .map_err(|e| AppCertErr(format!("failed to create cert path : {:?}", e)))?;
             }
         }
         fs::write(cpath, cert_pem)
-            .map_err(|e| AppCertErr(format!("Failed to write cert to cert path : {:?}", e)))?;
+            .map_err(|e| AppCertErr(format!("failed to write cert to cert path : {:?}", e)))?;
         Ok(())
     }
 }

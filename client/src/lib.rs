@@ -60,7 +60,7 @@ impl NodeAgentClient {
         )
         .map_err(|e| {
             NACliErr(format!(
-                "Failed to initialize node agent client connector: {:?}",
+                "failed to initialize node agent client connector: {:?}",
                 e
             ))
         })?;
@@ -86,7 +86,7 @@ impl NodeAgentClient {
                 }
                 Err(err) => {
                     return Err(NACliErr(format!(
-                    "Failed to reach node agent after {} attempts: {:?}. Is it installed correctly?",
+                    "failed to reach node agent after {} attempts: {:?}. Is it installed correctly?",
                     MAX_RETRIES,
                     err
                 )));
@@ -110,7 +110,7 @@ impl NodeAgentClient {
 
         self.client
             .get_fortanix_attestation(req)
-            .map_err(|e| NACliErr(format!("Failed to get fortanix attestation: {:?}", e)))
+            .map_err(|e| NACliErr(format!("failed to get fortanix attestation: {:?}", e)))
     }
 
     pub(crate) fn get_fortanix_certificate(&self, csr: String) -> Result<String> {
@@ -119,10 +119,10 @@ impl NodeAgentClient {
         let resp = self
             .client
             .issue_certificate(req)
-            .map_err(|e| NACliErr(format!("Failed to request app certificate : {:?}", e)))?;
+            .map_err(|e| NACliErr(format!("failed to request app certificate : {:?}", e)))?;
 
         resp.certificate.ok_or(NACliErr(
-            "Failed to read certificate from fortanix response".into(),
+            "failed to read certificate from fortanix response".into(),
         ))
     }
 }
@@ -144,18 +144,18 @@ pub trait Attest {
         let attestation_cert = local_attest_resp
             .attestation_certificate
             .clone()
-            .ok_or(AttestErr("Failed to obtain attestation certificate".into()))?;
+            .ok_or(AttestErr("failed to obtain attestation certificate".into()))?;
         let node_cert = local_attest_resp
             .node_certificate
             .clone()
-            .ok_or(AttestErr("Failed to get node certificate".into()))?;
+            .ok_or(AttestErr("failed to get node certificate".into()))?;
 
         let attestation_cert_der =
             pem_to_der(&attestation_cert, Some(PEM_CERTIFICATE)).ok_or(ConversionErr(
-                "Failed to convert attestation certificate from pem to der format".into(),
+                "failed to convert attestation certificate from pem to der format".into(),
             ))?;
         let node_cert_der = pem_to_der(&node_cert, Some(PEM_CERTIFICATE)).ok_or(ConversionErr(
-            "Failed to convert node certificate from pem to der format".into(),
+            "failed to convert node certificate from pem to der format".into(),
         ))?;
 
         let fqpe_certs = FqpeCerts {
@@ -163,13 +163,13 @@ pub trait Attest {
                 .into_iter()
                 .map(|cert| {
                     der::Document::from_der(&cert)
-                        .map_err(|e| AttestErr(format!("Failed to read fqpe certs : {:?}", e)))
+                        .map_err(|e| AttestErr(format!("failed to read fqpe certs : {:?}", e)))
                 })
                 .collect::<Result<_>>()?,
         };
         let attribute = Attribute::try_from(&fqpe_certs).map_err(|e| {
             AttestErr(format!(
-                "Failed to read attributes for fqpe certs : {:?}",
+                "failed to read attributes for fqpe certs : {:?}",
                 e
             ))
         })?;
@@ -217,7 +217,7 @@ impl BaremetalSevSnp {
         let attestation_report_der: TaggedDerValue = TaggedDerValue::try_from(attestation_report)
             .map_err(|e| {
             ConversionErr(format!(
-                "Failed to convert attestation report to der : {:?}",
+                "failed to convert attestation report to der : {:?}",
                 e
             ))
         })?;
@@ -226,19 +226,19 @@ impl BaremetalSevSnp {
                 let appconfig_id_value = OctetString::new(id)
                     .map_err(|e| {
                         AppCertErr(format!(
-                            "Failed to create appconfig ID octet string : {:?}",
+                            "failed to create appconfig ID octet string : {:?}",
                             e
                         ))
                     })?
                     .to_der()
                     .map_err(|e| {
-                        ConversionErr(format!("Failed to convert appconfig ID to der : {:?}", e))
+                        ConversionErr(format!("failed to convert appconfig ID to der : {:?}", e))
                     })?;
                 let appconfig_id_der: TaggedDerValue =
                     yasna::parse_der(&appconfig_id_value, |reader| reader.read_tagged_der())
                         .map_err(|e| {
                             ConversionErr(format!(
-                                "Failed to convert appconfig ID to tagged der : {:?}",
+                                "failed to convert appconfig ID to tagged der : {:?}",
                                 e
                             ))
                         })?;
@@ -255,10 +255,10 @@ impl BaremetalSevSnp {
         let pk_key = &mut appcert.key;
         let csr = Csr::mbedtls_crypto_builder()
             .with_self_signing_key(pk_key, pkix::types::RsaPkcs15(pkix::types::Sha256))
-            .map_err(|e| CryptoErr(format!("Failed to create crypto csr builder :{:?}", e)))?
+            .map_err(|e| CryptoErr(format!("failed to create crypto csr builder :{:?}", e)))?
             .with_subject(subject)
             .build_csr()
-            .map_err(|e| AppCertErr(format!("Failed to build local csr :{:?}", e)))?;
+            .map_err(|e| AppCertErr(format!("failed to build local csr :{:?}", e)))?;
         Ok(der_to_pem(csr.as_ref(), PEM_CERTIFICATE_REQUEST))
     }
 }
@@ -273,7 +273,7 @@ impl BaremetalTdx {
         let tdx_report_tagged_der: TaggedDerValue =
             yasna::parse_der(&tdx_report_der, |reader| reader.read_tagged_der()).map_err(|e| {
                 ConversionErr(format!(
-                    "Failed to convert tdx report der to tagged der : {:?}",
+                    "failed to convert tdx report der to tagged der : {:?}",
                     e
                 ))
             })?;
@@ -283,19 +283,19 @@ impl BaremetalTdx {
                 let appconfig_id_value = OctetString::new(id)
                     .map_err(|e| {
                         AppCertErr(format!(
-                            "Failed to create appconfig ID octet string : {:?}",
+                            "failed to create appconfig ID octet string : {:?}",
                             e
                         ))
                     })?
                     .to_der()
                     .map_err(|e| {
-                        ConversionErr(format!("Failed to convert appconfig ID to der : {:?}", e))
+                        ConversionErr(format!("failed to convert appconfig ID to der : {:?}", e))
                     })?;
                 let appconfig_id_der: TaggedDerValue =
                     yasna::parse_der(&appconfig_id_value, |reader| reader.read_tagged_der())
                         .map_err(|e| {
                             ConversionErr(format!(
-                                "Failed to convert appconfig ID to tagged der : {:?}",
+                                "failed to convert appconfig ID to tagged der : {:?}",
                                 e
                             ))
                         })?;
@@ -325,12 +325,12 @@ impl BaremetalTdx {
         let pk_key = &mut appcert.key;
         let csr = Csr::mbedtls_crypto_builder()
             .with_self_signing_key(pk_key, pkix::types::RsaPkcs15(pkix::types::Sha256))
-            .map_err(|e| CryptoErr(format!("Failed to create crypto csr builder :{:?}", e)))?
+            .map_err(|e| CryptoErr(format!("failed to create crypto csr builder :{:?}", e)))?
             .with_subject(subject)
             .with_attributes(attributes)
-            .map_err(|e| AppCertErr(format!("Failed to add tdx attributes to csr : {:?}", e)))?
+            .map_err(|e| AppCertErr(format!("failed to add tdx attributes to csr : {:?}", e)))?
             .build_csr()
-            .map_err(|e| AppCertErr(format!("Failed to build local csr :{:?}", e)))?;
+            .map_err(|e| AppCertErr(format!("failed to build local csr :{:?}", e)))?;
         Ok(der_to_pem(csr.as_ref(), PEM_CERTIFICATE_REQUEST))
     }
 }
@@ -358,7 +358,7 @@ impl Attest for BaremetalTdx {
             Ok(evidences) => {
                 let coprocessor = CoprocessorAttestationV1::try_from(evidences).map_err(|e| {
                     ConversionErr(format!(
-                        "Failed to get CoprocessorAttestationV1 from gpu evidence : {:?}",
+                        "failed to get CoprocessorAttestationV1 from gpu evidence : {:?}",
                         e
                     ))
                 })?;
@@ -373,7 +373,7 @@ impl Attest for BaremetalTdx {
         let coprocessors_set: CoprocessorAttestationSetV1 =
             coprocessors.try_into().map_err(|e: der::Error| {
                 ConversionErr(format!(
-                    "Failed to parse CoprocessorAttestationSetV1: {:?}",
+                    "failed to parse CoprocessorAttestationSetV1: {:?}",
                     e.to_string()
                 ))
             })?;
