@@ -493,7 +493,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 [[package]]
 name = "ftx-cert-build"
 version = "0.1.0"
-source = "git+https://github.com/fortanix/ftx-cert-build.git?branch=dlegalov%2FRTE-1101-use-open-source-attestation-crate#0ac56e834d69eaf0120f6b6d7614d97c83877e2e"
+source = "git+https://github.com/fortanix/ftx-cert-build.git#e1b4a4312785e0be6aed5d9a6664d65386ea4314"
 dependencies = [
  "chrono",
  "mbedtls",
