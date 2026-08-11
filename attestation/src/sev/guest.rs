@@ -43,13 +43,11 @@ impl SevGuestErr {
     }
 
     // We can check for both fw_err and vmm_err directly.
-    pub(crate) fn check_err(fw_err: u32, vmm_err: u32) -> Result<(), Self> {
+    pub(crate) fn check_err(fw_err: u32, vmm_err: u32) {
         if fw_err != 0 || vmm_err != 0 {
             let err_instance = Self::create_err(fw_err, vmm_err);
             log::error!("{}", err_instance);
-            return Err(err_instance);
         }
-        Ok(())
     }
 }
 
@@ -157,7 +155,7 @@ mod preview {
             File::open(DEVICE_PATH).map_err(|e| SevGuestErr::CannotOpenDevice(DEVICE_PATH, e))?;
 
         let res = SNP_GET_REPORT.ioctl(&mut device, &mut message);
-        SevGuestErr::check_err(message.fw_err, 0)?;
+        SevGuestErr::check_err(message.fw_err, 0);
 
         // Non-negative return code indicates success.
         let _rc = res.map_err(SevGuestErr::IoctlErr)?;
@@ -236,7 +234,7 @@ mod upstream {
         };
 
         let res = SNP_GET_REPORT.ioctl(&mut device, &mut message);
-        SevGuestErr::check_err(message.exit_info.fw_err, message.exit_info.vmm_err)?;
+        SevGuestErr::check_err(message.exit_info.fw_err, message.exit_info.vmm_err);
 
         // Non-negative return code indicates success.
         let _rc = res.map_err(SevGuestErr::IoctlErr)?;
@@ -279,20 +277,13 @@ pub fn request_guest_report(
 mod tests {
     use super::super::guest::SevGuestErr;
 
-    // test for no errors (fw_err: 0, vmm_err: 0). Return Ok(()).
-    #[test]
-    fn test_no_errors() {
-        let parsed_error = SevGuestErr::check_err(0, 0);
-        assert!(parsed_error.is_ok());
-    }
-
     // test for fw_error only (fw_err: non-zero hexadecimal code, vmm_err: 0). Return Err(SevGuestErr::SevGuestRequestError).
     #[test]
     fn test_fw_error_only() {
         let fw_error_code: u32 = 0x000B; // corresponds to SEV_RET_BAD_MEASUREMENT error code, this is just an example
-        let parsed_error = SevGuestErr::check_err(fw_error_code, 0);
+        let parsed_error = SevGuestErr::create_err(fw_error_code, 0);
         assert!(
-            matches!(parsed_error, Err(SevGuestErr::SevGuestRequestError(_, fw_code, vmm_code)) if fw_code == fw_error_code && vmm_code == 0)
+            matches!(parsed_error, SevGuestErr::SevGuestRequestError(_, fw_code, vmm_code) if fw_code == fw_error_code && vmm_code == 0)
         )
     }
 
@@ -300,9 +291,9 @@ mod tests {
     #[test]
     fn test_vmm_error_only() {
         let vmm_error_code: u32 = 2; // This vmm_err corresponds to SNP_GUEST_VMM_ERR_BUSY (see sev-guest.h)
-        let parsed_error = SevGuestErr::check_err(0, vmm_error_code);
+        let parsed_error = SevGuestErr::create_err(0, vmm_error_code);
         assert!(
-            matches!(parsed_error, Err(SevGuestErr::SevGuestRequestError(_, fw_code, vmm_code)) if fw_code == 0 && vmm_code == vmm_error_code)
+            matches!(parsed_error, SevGuestErr::SevGuestRequestError(_, fw_code, vmm_code) if fw_code == 0 && vmm_code == vmm_error_code)
         )
     }
 
@@ -311,9 +302,9 @@ mod tests {
     fn test_fw_and_vmm_error() {
         let fw_error_code: u32 = 0x000B;
         let vmm_error_code: u32 = 2;
-        let parsed_error = SevGuestErr::check_err(fw_error_code, vmm_error_code);
+        let parsed_error = SevGuestErr::create_err(fw_error_code, vmm_error_code);
         assert!(
-            matches!(parsed_error, Err(SevGuestErr::SevGuestRequestError(_, fw_code, vmm_code)) if fw_code == fw_error_code && vmm_code == vmm_error_code)
+            matches!(parsed_error, SevGuestErr::SevGuestRequestError(_, fw_code, vmm_code) if fw_code == fw_error_code && vmm_code == vmm_error_code)
         )
     }
 }
