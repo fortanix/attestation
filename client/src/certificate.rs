@@ -63,16 +63,18 @@ impl AppCert {
         // Obtain domain names requested by the user
         let alt_names = Self::get_alt_names().unwrap_or_default();
 
-        let subject = NameBuilder::new()
-            .add_common_name_iter(alt_names)
-            .build_subject();
+        let subject = match alt_names.first() {
+            Some(domain) => NameBuilder::new().add_common_name(domain).build_name(),
+            None => vec![].into(),
+        };
 
         // Include [attestation_certificate, node_certificate] as extension in the body
         let pk_key = &mut self.key;
         let csr = Csr::mbedtls_crypto_builder()
             .with_self_signing_key(pk_key, pkix::types::RsaPkcs15(pkix::types::Sha256))
             .map_err(|e| CryptoErr(format!("failed to create crypto csr builder :{:?}", e)))?
-            .with_subject(subject)
+            .with_subject(subject.into())
+            .with_san_extension_from_strs(&alt_names)
             .with_attributes(attributes)
             .map_err(|e| AppCertErr(format!("failed to add csr attributes : {:?}", e)))?
             .build_csr()
