@@ -61,8 +61,9 @@ impl AppCert {
 
     pub(crate) fn request_app_cert_csr(&mut self, attributes: Vec<Attribute>) -> Result<String> {
         // Obtain domain names requested by the user
-        let alt_names = Self::get_alt_names();
-        let subject = match alt_names.clone().as_ref().and_then(|names| names.first()) {
+        let alt_names = Self::get_alt_names().unwrap_or_default();
+
+        let subject = match alt_names.first() {
             Some(domain) => NameBuilder::new().add_common_name(domain).build_name(),
             None => vec![].into(),
         };
@@ -73,7 +74,7 @@ impl AppCert {
             .with_self_signing_key(pk_key, pkix::types::RsaPkcs15(pkix::types::Sha256))
             .map_err(|e| CryptoErr(format!("failed to create crypto csr builder :{:?}", e)))?
             .with_subject(subject.into())
-            .with_san_extension_from_strs(&alt_names.unwrap_or_default())
+            .with_san_extension_from_strs(&alt_names)
             .with_attributes(attributes)
             .map_err(|e| AppCertErr(format!("failed to add csr attributes : {:?}", e)))?
             .build_csr()
