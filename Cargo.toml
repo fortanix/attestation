@@ -21,6 +21,6 @@ sgx_pkix = { version = "0.3.0" }
 sgx-isa = { version = "0.5.0", default-features = false }
 tdx-ql = "0.1.0"
 thiserror = "1.0.10"
-tokio = "1.50"
+tokio = "=1.36"
 vsock = "0.5.0"
 yasna = "0.3.0"
