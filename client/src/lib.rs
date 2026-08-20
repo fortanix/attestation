@@ -25,7 +25,7 @@ use em_node_agent_client::models::{
 use em_node_agent_client::{CertificateApi, Client, EnclaveApi, SystemApi};
 use ftx_cert_build::name_builder::NameBuilder;
 use ftx_cert_build::Csr;
-use log::{debug, info};
+use log::info;
 use pkix::pem::{der_to_pem, pem_to_der, PEM_CERTIFICATE, PEM_CERTIFICATE_REQUEST};
 use pkix::types::{Attribute, HasOid, TaggedDerValue};
 use pkix::{yasna, ToDer};
@@ -39,10 +39,6 @@ pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = vsock::VMADDR_CID_HOST;
 const DEFAULT_NODE_AGENT_VSOCK_ADDR: &str = "http://0.0.0.0:40/";
 const MAX_RETRIES: usize = 10;
 const RETRY_DELAY: Duration = Duration::from_secs(1);
-
-fn hex_encode(bytes: &[u8]) -> String {
-    bytes.iter().map(|byte| format!("{:02x}", byte)).collect()
-}
 
 pub struct BaremetalSevSnp;
 pub struct BaremetalTdx;
@@ -379,13 +375,23 @@ impl Attest for BaremetalTdx {
             .build_decoupled_report()
             .map_err(TdxAttestationErr)?;
 
-        debug!("TDX Machine measurements:");
-        let measurements_base = &tdx_report.td_info().base;
-        debug!("MRTD: {}", hex_encode(&measurements_base.mr_td));
-        debug!("RTMR0: {}", hex_encode(&measurements_base.rtmr[0]));
-        debug!("RTMR1: {}", hex_encode(&measurements_base.rtmr[1]));
-        debug!("RTMR2: {}", hex_encode(&measurements_base.rtmr[2]));
-        debug!("RTMR3: {}", hex_encode(&measurements_base.rtmr[3]));
+        // Only print these in debug builds, not release builds
+        #[cfg(debug_assertions)]
+        {
+            use log::debug;
+
+            fn hex_encode(bytes: &[u8]) -> String {
+                bytes.iter().map(|byte| format!("{:02x}", byte)).collect()
+            }
+
+            debug!("TDX Machine measurements:");
+            let measurements_base = &tdx_report.td_info().base;
+            debug!("MRTD: {}", hex_encode(&measurements_base.mr_td));
+            debug!("RTMR0: {}", hex_encode(&measurements_base.rtmr[0]));
+            debug!("RTMR1: {}", hex_encode(&measurements_base.rtmr[1]));
+            debug!("RTMR2: {}", hex_encode(&measurements_base.rtmr[2]));
+            debug!("RTMR3: {}", hex_encode(&measurements_base.rtmr[3]));
+        }
 
         let tee_report_mac_der = tee_report_mac.to_der();
         let tdx_report_der = tdx_report.to_der();
