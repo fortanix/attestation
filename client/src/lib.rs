@@ -128,6 +128,7 @@ pub trait Attest {
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
+        alt_names: Option<Vec<String>>,
     ) -> Result<()> {
         let local_attest_resp =
             Self::perform_local_attestation(app_cert, node_agent_cli, app_config_id)?;
@@ -164,7 +165,7 @@ pub trait Attest {
             ))
         })?;
 
-        let app_cert_csr = app_cert.request_app_cert_csr(vec![attribute])?;
+        let app_cert_csr = app_cert.request_app_cert_csr(vec![attribute], alt_names)?;
         let app_cert_cert = node_agent_cli.get_fortanix_certificate(app_cert_csr)?;
         app_cert.cert = Some(app_cert_cert);
         Ok(())
