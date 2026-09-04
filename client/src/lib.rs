@@ -21,6 +21,7 @@ use der::asn1::OctetString;
 use der::{Decode, Encode};
 use em_node_agent_client::models::{
     GetFortanixAttestationRequest, GetFortanixAttestationResponse, IssueCertificateRequest,
+    TaskStatusType,
 };
 use em_node_agent_client::{CertificateApi, Client, EnclaveApi, SystemApi};
 use ftx_cert_build::name_builder::NameBuilder;
@@ -107,17 +108,70 @@ impl NodeAgentClient {
             .map_err(|e| NACliErr(format!("failed to get fortanix attestation: {:?}", e)))
     }
 
+    // `/v1/certificate/issue` is submit-then-poll: a 200 means the task was
+    // accepted, not that the cert is ready. Poll the result endpoint until
+    // the task leaves INPROGRESS.
+    const POLL_INTERVAL: Duration = Duration::from_secs(1);
+    const POLL_MAX_ATTEMPTS: u32 = 60;
+
     pub(crate) fn get_fortanix_certificate(&self, csr: String) -> Result<String> {
         let req = IssueCertificateRequest { csr: Some(csr) };
 
-        let resp = self
+        let mut resp = self
             .client
             .issue_certificate(req)
             .map_err(|e| NACliErr(format!("failed to request app certificate : {:?}", e)))?;
 
-        resp.certificate.ok_or(NACliErr(
-            "failed to read certificate from fortanix response".into(),
-        ))
+        if let Some(cert) = resp.certificate {
+            return Ok(cert);
+        }
+
+        let task_id = resp.task_id.ok_or(NACliErr(
+            "issue cert response had neither a certificate nor a task_id to poll".into(),
+        ))?;
+
+        for _ in 0..Self::POLL_MAX_ATTEMPTS {
+            match resp.task_status {
+                Some(TaskStatusType::SUCCESS) | None => {
+                    if let Some(cert) = resp.certificate {
+                        return Ok(cert);
+                    }
+                }
+                Some(TaskStatusType::FAILED) => {
+                    return Err(NACliErr(format!(
+                        "certificate issuance task {task_id} failed"
+                    )));
+                }
+                Some(TaskStatusType::DENIED) => {
+                    return Err(NACliErr(format!(
+                        "certificate issuance task {task_id} was denied"
+                    )));
+                }
+                Some(TaskStatusType::PENDING_WHITELIST) => {
+                    return Err(NACliErr(format!(
+                        "certificate issuance task {task_id} is pending whitelist approval"
+                    )));
+                }
+                Some(TaskStatusType::INPROGRESS) => {}
+            }
+
+            std::thread::sleep(Self::POLL_INTERVAL);
+
+            resp = self
+                .client
+                .get_issue_certificate_response(task_id)
+                .map_err(|e| {
+                    NACliErr(format!(
+                        "failed to poll certificate issuance task {task_id}: {:?}",
+                        e
+                    ))
+                })?;
+        }
+
+        Err(NACliErr(format!(
+            "certificate issuance task {task_id} did not complete within {} seconds",
+            Self::POLL_MAX_ATTEMPTS as u64 * Self::POLL_INTERVAL.as_secs()
+        )))
     }
 }
 

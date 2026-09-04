@@ -43,11 +43,13 @@ impl SevGuestErr {
     }
 
     // We can check for both fw_err and vmm_err directly.
-    pub(crate) fn check_err(fw_err: u32, vmm_err: u32) {
+    pub(crate) fn check_err(fw_err: u32, vmm_err: u32) -> Result<(), Self> {
         if fw_err != 0 || vmm_err != 0 {
             let err_instance = Self::create_err(fw_err, vmm_err);
             log::error!("{}", err_instance);
+            return Err(err_instance);
         }
+        Ok(())
     }
 }
 
@@ -155,7 +157,7 @@ mod preview {
             File::open(DEVICE_PATH).map_err(|e| SevGuestErr::CannotOpenDevice(DEVICE_PATH, e))?;
 
         let res = SNP_GET_REPORT.ioctl(&mut device, &mut message);
-        SevGuestErr::check_err(message.fw_err, 0);
+        SevGuestErr::check_err(message.fw_err, 0)?;
 
         // Non-negative return code indicates success.
         let _rc = res.map_err(SevGuestErr::IoctlErr)?;
@@ -234,7 +236,7 @@ mod upstream {
         };
 
         let res = SNP_GET_REPORT.ioctl(&mut device, &mut message);
-        SevGuestErr::check_err(message.exit_info.fw_err, message.exit_info.vmm_err);
+        SevGuestErr::check_err(message.exit_info.fw_err, message.exit_info.vmm_err)?;
 
         // Non-negative return code indicates success.
         let _rc = res.map_err(SevGuestErr::IoctlErr)?;
@@ -276,6 +278,13 @@ pub fn request_guest_report(
 #[cfg(test)]
 mod tests {
     use super::super::guest::SevGuestErr;
+
+    // check_err must return Ok(()) when both codes are zero, so a clean
+    // report isn't mistaken for a firmware/VMM failure.
+    #[test]
+    fn test_no_errors() {
+        assert!(SevGuestErr::check_err(0, 0).is_ok());
+    }
 
     // test for fw_error only (fw_err: non-zero hexadecimal code, vmm_err: 0). Return Err(SevGuestErr::SevGuestRequestError).
     #[test]
