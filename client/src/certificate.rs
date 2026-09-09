@@ -51,27 +51,12 @@ impl AppCert {
             .map_err(|_| AppCertErr("failed to get public key hash".to_string()))
     }
 
-    fn get_alt_names() -> Option<Vec<String>> {
-        std::env::var("APP_CERT_ALT_NAMES")
-            .ok()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .map(|names| names.split(',').map(|s| s.to_string()).collect())
-    }
-
     pub(crate) fn request_app_cert_csr(
         &mut self,
         attributes: Vec<Attribute>,
         alt_names: Option<Vec<String>>,
     ) -> Result<String> {
-        // If no alt names are given to the function,
-        // the APP_CERT_ALT_NAMES env var will be checked for these names
-        let alt_names = if let Some(names) = alt_names {
-            names
-        } else {
-            Self::get_alt_names().unwrap_or_default()
-        };
-
+        let alt_names = alt_names.unwrap_or_default();
         let subject = match alt_names.first() {
             Some(domain) => NameBuilder::new().add_common_name(domain).build_name(),
             None => vec![].into(),
