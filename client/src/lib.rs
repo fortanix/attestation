@@ -33,7 +33,6 @@ use pkix::{yasna, ToDer};
 use crate::certificate::AppCert;
 use crate::error::Error::*;
 use crate::error::Result;
-use crate::utils::get_app_config_id;
 use crate::vsock_connector::VsockConnector;
 pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = vsock::VMADDR_CID_HOST;
 const DEFAULT_NODE_AGENT_VSOCK_ADDR: &str = "http://0.0.0.0:40/";
@@ -178,13 +177,7 @@ impl Attest for BaremetalSevSnp {
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse> {
-        // Check if appconfig_id is available
-        let appconfig_id_bind: Option<Vec<u8>> = if app_config_id.is_some() {
-            app_config_id
-        } else {
-            get_app_config_id()
-        };
-        let appconfig_id: Option<&[u8]> = appconfig_id_bind.as_deref();
+        let appconfig_id: Option<&[u8]> = app_config_id.as_deref();
 
         // Compute the public key hash
         let spki_hash = app_cert.get_spki_hash()?;
@@ -331,13 +324,7 @@ impl Attest for BaremetalTdx {
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse> {
-        // Check if appconfig_id is available
-        let appconfig_id_bind: Option<Vec<u8>> = if app_config_id.is_some() {
-            app_config_id
-        } else {
-            get_app_config_id()
-        };
-        let appconfig_id: Option<&[u8]> = appconfig_id_bind.as_deref();
+        let appconfig_id: Option<&[u8]> = app_config_id.as_deref();
 
         // Compute the public key hash
         let spki_hash = app_cert.get_spki_hash()?;
