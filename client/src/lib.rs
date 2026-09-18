@@ -33,7 +33,6 @@ use pkix::{yasna, ToDer};
 use crate::certificate::AppCert;
 use crate::error::Error::*;
 use crate::error::Result;
-use crate::utils::get_app_config_id;
 use crate::vsock_connector::VsockConnector;
 pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = vsock::VMADDR_CID_HOST;
 const DEFAULT_NODE_AGENT_VSOCK_ADDR: &str = "http://0.0.0.0:40/";
@@ -128,6 +127,7 @@ pub trait Attest {
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
+        alt_names: Option<Vec<String>>,
     ) -> Result<()> {
         let local_attest_resp =
             Self::perform_local_attestation(app_cert, node_agent_cli, app_config_id)?;
@@ -164,7 +164,7 @@ pub trait Attest {
             ))
         })?;
 
-        let app_cert_csr = app_cert.request_app_cert_csr(vec![attribute])?;
+        let app_cert_csr = app_cert.request_app_cert_csr(vec![attribute], alt_names)?;
         let app_cert_cert = node_agent_cli.get_fortanix_certificate(app_cert_csr)?;
         app_cert.cert = Some(app_cert_cert);
         Ok(())
@@ -177,13 +177,7 @@ impl Attest for BaremetalSevSnp {
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse> {
-        // Check if appconfig_id is available
-        let appconfig_id_bind: Option<Vec<u8>> = if app_config_id.is_some() {
-            app_config_id
-        } else {
-            get_app_config_id()
-        };
-        let appconfig_id: Option<&[u8]> = appconfig_id_bind.as_deref();
+        let appconfig_id: Option<&[u8]> = app_config_id.as_deref();
 
         // Compute the public key hash
         let spki_hash = app_cert.get_spki_hash()?;
@@ -330,13 +324,7 @@ impl Attest for BaremetalTdx {
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse> {
-        // Check if appconfig_id is available
-        let appconfig_id_bind: Option<Vec<u8>> = if app_config_id.is_some() {
-            app_config_id
-        } else {
-            get_app_config_id()
-        };
-        let appconfig_id: Option<&[u8]> = appconfig_id_bind.as_deref();
+        let appconfig_id: Option<&[u8]> = app_config_id.as_deref();
 
         // Compute the public key hash
         let spki_hash = app_cert.get_spki_hash()?;

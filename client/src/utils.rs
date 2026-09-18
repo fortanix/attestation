@@ -30,7 +30,3 @@ pub fn extract_oid_from_extension(extns: Vec<Extension>, oid: ObjectIdentifier) 
             oid
         )))
 }
-
-pub fn get_app_config_id() -> Option<Vec<u8>> {
-    std::env::var("APPCONFIG_ID").ok().map(|s| s.into_bytes())
-}

@@ -51,18 +51,12 @@ impl AppCert {
             .map_err(|_| AppCertErr("failed to get public key hash".to_string()))
     }
 
-    fn get_alt_names() -> Option<Vec<String>> {
-        std::env::var("APP_CERT_ALT_NAMES")
-            .ok()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .map(|names| names.split(',').map(|s| s.to_string()).collect())
-    }
-
-    pub(crate) fn request_app_cert_csr(&mut self, attributes: Vec<Attribute>) -> Result<String> {
-        // Obtain domain names requested by the user
-        let alt_names = Self::get_alt_names().unwrap_or_default();
-
+    pub(crate) fn request_app_cert_csr(
+        &mut self,
+        attributes: Vec<Attribute>,
+        alt_names: Option<Vec<String>>,
+    ) -> Result<String> {
+        let alt_names = alt_names.unwrap_or_default();
         let subject = match alt_names.first() {
             Some(domain) => NameBuilder::new().add_common_name(domain).build_name(),
             None => vec![].into(),
@@ -131,5 +125,66 @@ impl AppCertMetadata {
             key_path: key_path.unwrap_or(APP_CERT_KEY_NAME_DEFAULT).to_string(),
             cert_path: cert_path.unwrap_or(APP_CERT_FILE_NAME_DEFAULT).to_string(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::error::Error::*;
+    use crate::error::Result;
+    use crate::utils::extract_oid_from_extension;
+    use crate::AppCert;
+    use ftx_cert_build::name_builder::NameBuilder;
+    use pkix::pem::{pem_to_der, PEM_CERTIFICATE_REQUEST};
+    use pkix::pkcs10::{DerCertificationRequest, ExtensionRequest};
+    use pkix::types::{Extension, GeneralName, GeneralNames};
+    use pkix::x509::SubjectAltName;
+    use pkix::yasna::construct_der;
+    use pkix::DerWrite;
+    use pkix::{oid, FromDer};
+
+    fn extract_extensions_from_csr(csr: &DerCertificationRequest) -> Result<Vec<Extension>> {
+        let extensions = csr
+            .get_singular_attribute::<ExtensionRequest>()
+            .ok_or(CertErr("CSR has no extension request".into()))?;
+        Ok(extensions.extensions.to_vec())
+    }
+
+    fn construct_san_extension(alt_names: Vec<String>) -> Vec<u8> {
+        let expected_san = alt_names
+            .iter()
+            .map(|name| GeneralName::DnsName(name.as_str().into()))
+            .collect::<Vec<_>>();
+        construct_der(|w| {
+            SubjectAltName {
+                names: GeneralNames(expected_san),
+            }
+            .write(w)
+        })
+    }
+
+    #[test]
+    fn test_inspect_csr() {
+        let alt_names = vec!["example.com".to_string(), "example.net".to_string()];
+
+        let mut app_cert = AppCert::init().unwrap();
+        let app_csr = app_cert
+            .request_app_cert_csr(vec![], Some(alt_names.clone()))
+            .unwrap();
+
+        let der_csr = pem_to_der(&app_csr, Some(PEM_CERTIFICATE_REQUEST)).unwrap();
+        let csr = DerCertificationRequest::from_der(&der_csr).unwrap();
+
+        let expected_subject = NameBuilder::new()
+            .add_common_name(&alt_names[0])
+            .build_name();
+        assert_eq!(csr.reqinfo.subject, expected_subject);
+
+        let expected_san = construct_san_extension(alt_names);
+        let extensions = extract_extensions_from_csr(&csr).unwrap();
+        let actual_san =
+            extract_oid_from_extension(extensions, oid::subjectAltName.clone()).unwrap();
+
+        assert_eq!(expected_san, actual_san);
     }
 }
