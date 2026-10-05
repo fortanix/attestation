@@ -187,6 +187,7 @@ pub trait Attest {
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
     ) -> Result<()> {
+        debug!("app_config_id: {:?}", &app_config_id);
         let local_attest_resp =
             Self::perform_local_attestation(app_cert, node_agent_cli, app_config_id)?;
         let attestation_cert = local_attest_resp
@@ -223,6 +224,7 @@ pub trait Attest {
         })?;
 
         let app_cert_csr = app_cert.request_app_cert_csr(vec![attribute])?;
+        debug!("CSR: {app_cert_csr}");
         let app_cert_cert = node_agent_cli.get_fortanix_certificate(app_cert_csr)?;
         app_cert.cert = Some(app_cert_cert);
         Ok(())
