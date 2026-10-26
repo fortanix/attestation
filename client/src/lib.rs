@@ -78,7 +78,7 @@ impl NodeAgentClient {
                         attempt, MAX_RETRIES, err
                     );
 
-                    let _ = tokio::time::sleep(RETRY_DELAY);
+                    let _ = tokio::time::sleep(RETRY_DELAY).await;
                 }
             }
         }
