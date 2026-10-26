@@ -10,6 +10,7 @@ pub mod utils;
 pub mod vsock_connector;
 use std::time::Duration;
 
+use async_trait::async_trait;
 use attestation::nvidia::evidence::get_nvidia_evidence;
 use attestation::tdx::{
     PackedTdxReportGuestV1, TdxReportMeasurements, TdxReportVersion1, TeeReportMac,
@@ -34,7 +35,7 @@ use crate::certificate::AppCert;
 use crate::error::Error::*;
 use crate::error::Result;
 use crate::vsock_connector::VsockConnector;
-pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = vsock::VMADDR_CID_HOST;
+pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = tokio_vsock::VMADDR_CID_HOST;
 const DEFAULT_NODE_AGENT_VSOCK_ADDR: &str = "http://0.0.0.0:40/";
 const MAX_RETRIES: usize = 10;
 const RETRY_DELAY: Duration = Duration::from_secs(1);
@@ -47,7 +48,7 @@ pub struct NodeAgentClient {
 }
 
 impl NodeAgentClient {
-    pub fn init() -> Result<Self> {
+    pub async fn init() -> Result<Self> {
         let client = Client::try_new_with_connector(
             DEFAULT_NODE_AGENT_VSOCK_ADDR,
             Some("http"),
@@ -61,7 +62,7 @@ impl NodeAgentClient {
         })?;
 
         for attempt in 1..=MAX_RETRIES {
-            match client.get_agent_version() {
+            match client.get_agent_version().await {
                 Ok(version) => {
                     info!(
                         "Connected to Node Agent (version {}) after {} attempt(s)",
@@ -87,7 +88,7 @@ impl NodeAgentClient {
         )))
     }
 
-    pub(crate) fn get_fortanix_attestation(
+    pub(crate) async fn get_fortanix_attestation(
         &self,
         csr: Option<String>,
         report: Option<String>,
@@ -99,15 +100,17 @@ impl NodeAgentClient {
 
         self.client
             .get_fortanix_attestation(req)
+            .await
             .map_err(|e| NACliErr(format!("failed to get fortanix attestation: {:?}", e)))
     }
 
-    pub(crate) fn get_fortanix_certificate(&self, csr: String) -> Result<String> {
+    pub(crate) async fn get_fortanix_certificate(&self, csr: String) -> Result<String> {
         let req = IssueCertificateRequest { csr: Some(csr) };
 
         let resp = self
             .client
             .issue_certificate(req)
+            .await
             .map_err(|e| NACliErr(format!("failed to request app certificate : {:?}", e)))?;
 
         resp.certificate.ok_or(NACliErr(
@@ -116,21 +119,22 @@ impl NodeAgentClient {
     }
 }
 
-pub trait Attest {
-    fn perform_local_attestation(
+#[async_trait]
+pub trait Attest: Sync + Send {
+    async fn perform_local_attestation(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse>;
 
-    fn attest_and_request_app_cert(
+    async fn attest_and_request_app_cert(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
         alt_names: Option<Vec<String>>,
     ) -> Result<()> {
         let local_attest_resp =
-            Self::perform_local_attestation(app_cert, node_agent_cli, app_config_id)?;
+            Self::perform_local_attestation(app_cert, node_agent_cli, app_config_id).await?;
         let attestation_cert = local_attest_resp
             .attestation_certificate
             .clone()
@@ -165,14 +169,17 @@ pub trait Attest {
         })?;
 
         let app_cert_csr = app_cert.request_app_cert_csr(vec![attribute], alt_names)?;
-        let app_cert_cert = node_agent_cli.get_fortanix_certificate(app_cert_csr)?;
+        let app_cert_cert = node_agent_cli
+            .get_fortanix_certificate(app_cert_csr)
+            .await?;
         app_cert.cert = Some(app_cert_cert);
         Ok(())
     }
 }
 
+#[async_trait]
 impl Attest for BaremetalSevSnp {
-    fn perform_local_attestation(
+    async fn perform_local_attestation(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
@@ -188,7 +195,9 @@ impl Attest for BaremetalSevSnp {
 
         // Construct the local attestation CSR
         let csr = Self::get_local_attestation_csr(app_cert, &attestation_report, appconfig_id)?;
-        node_agent_cli.get_fortanix_attestation(Some(csr), None)
+        node_agent_cli
+            .get_fortanix_attestation(Some(csr), None)
+            .await
     }
 }
 
@@ -318,8 +327,10 @@ impl BaremetalTdx {
         Ok(der_to_pem(csr.as_ref(), PEM_CERTIFICATE_REQUEST))
     }
 }
+
+#[async_trait]
 impl Attest for BaremetalTdx {
-    fn perform_local_attestation(
+    async fn perform_local_attestation(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
@@ -379,6 +390,10 @@ impl Attest for BaremetalTdx {
             debug!("RTMR1: {}", hex_encode(&measurements_base.rtmr[1]));
             debug!("RTMR2: {}", hex_encode(&measurements_base.rtmr[2]));
             debug!("RTMR3: {}", hex_encode(&measurements_base.rtmr[3]));
+            debug!(
+                "MRCONFIG_ID: {}",
+                hex_encode(&measurements_base.mr_config_id)
+            );
         }
 
         let tee_report_mac_der = tee_report_mac.to_der();
@@ -391,6 +406,8 @@ impl Attest for BaremetalTdx {
             tdx_report_der,
             appconfig_id,
         )?;
-        node_agent_cli.get_fortanix_attestation(Some(csr), None)
+        node_agent_cli
+            .get_fortanix_attestation(Some(csr), None)
+            .await
     }
 }

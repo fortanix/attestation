@@ -9,7 +9,8 @@ use client::error::Result;
 use client::BaremetalSevSnp;
 use common::run_client;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     env_logger::init();
-    run_client::<BaremetalSevSnp>()
+    run_client::<BaremetalSevSnp>().await
 }

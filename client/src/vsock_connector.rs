@@ -3,16 +3,20 @@
 |* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
 |* the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Creating a wrapper for VsockStream here that is acceptable to hyper v0.10.
-// This is the version of hyper used in em-node-agent-client. This older version
+// Creating a wrapper for VsockStream here that is acceptable to simple-hyper-client=0.4.0
+// This is the version of hyper used in em-node-agent-client. This version
 // of hyper doesn't accept VsockStream directly and requires us to implement
 // NetworkStream and NetworkConnector
-use std::io::{self, Read, Write};
-use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
-use std::time::Duration;
+use std::error::Error;
+use std::future::Future;
+use std::io;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use hyper::net::{NetworkConnector, NetworkStream};
-use vsock::{VsockAddr, VsockStream};
+use simple_hyper_client::compat::{Connected, Connection};
+use simple_hyper_client::{NetworkConnection, NetworkConnector, Uri};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+use tokio_vsock::{VsockAddr, VsockStream};
 
 use crate::DEFAULT_NODE_AGENT_VSOCK_CID;
 
@@ -22,56 +26,60 @@ pub struct VsockConnector;
 #[derive(Debug)]
 pub struct HyperVsockStream(VsockStream);
 
-impl Read for HyperVsockStream {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.read(buf)
+impl Connection for HyperVsockStream {
+    fn connected(&self) -> Connected {
+        Connected::new()
     }
 }
 
-impl Write for HyperVsockStream {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.write(buf)
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        self.0.flush()
+impl AsyncRead for HyperVsockStream {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.get_mut().0).poll_read(cx, buf)
     }
 }
 
-impl NetworkStream for HyperVsockStream {
-    fn peer_addr(&mut self) -> io::Result<SocketAddr> {
-        Ok(SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0))
+impl AsyncWrite for HyperVsockStream {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
+        Pin::new(&mut self.get_mut().0).poll_write(cx, buf)
     }
 
-    fn set_read_timeout(&self, dur: Option<Duration>) -> io::Result<()> {
-        self.0.set_read_timeout(dur)
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.get_mut().0).poll_flush(cx)
     }
 
-    fn set_write_timeout(&self, dur: Option<Duration>) -> io::Result<()> {
-        self.0.set_write_timeout(dur)
-    }
-
-    fn close(&mut self, how: Shutdown) -> io::Result<()> {
-        self.0.shutdown(match how {
-            Shutdown::Read => std::net::Shutdown::Read,
-            Shutdown::Write => std::net::Shutdown::Write,
-            Shutdown::Both => std::net::Shutdown::Both,
-        })
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.get_mut().0).poll_shutdown(cx)
     }
 }
 
 impl NetworkConnector for VsockConnector {
-    type Stream = HyperVsockStream;
+    fn connect(
+        &self,
+        uri: Uri,
+    ) -> Pin<Box<dyn Future<Output = Result<NetworkConnection, Box<dyn Error + Send + Sync>>> + Send>>
+    {
+        Box::pin(async move {
+            if uri.scheme_str() != Some("http") {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "VsockConnector only supports http scheme",
+                )
+                .into());
+            }
 
-    fn connect(&self, _host: &str, port: u16, scheme: &str) -> hyper::Result<Self::Stream> {
-        if scheme != "http" {
-            return Err(hyper::Error::Io(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "failed to connect - VsockConnector only supports http scheme",
-            )));
-        }
+            let port = u32::from(uri.port_u16().unwrap_or(80));
+            let addr = VsockAddr::new(DEFAULT_NODE_AGENT_VSOCK_CID, port);
+            let stream = VsockStream::connect(addr).await?;
 
-        let addr = VsockAddr::new(DEFAULT_NODE_AGENT_VSOCK_CID, port as u32);
-        let stream = VsockStream::connect(&addr).map_err(hyper::Error::Io)?;
-        Ok(HyperVsockStream(stream))
+            Ok(NetworkConnection::new(HyperVsockStream(stream)))
+        })
     }
 }
