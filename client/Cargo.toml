@@ -14,7 +14,6 @@ der = { workspace = true }
 em-node-agent-client = { workspace = true }
 env_logger = { workspace = true }
 ftx-cert-build = { workspace = true, features = ["rsa", "mbedtls_adapter"] }
-hyper = { workspace = true }
 log = { workspace = true }
 mbedtls = { workspace = true, features = ["rdrand"] }
 pkix = { workspace = true }

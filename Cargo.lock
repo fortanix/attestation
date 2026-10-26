@@ -307,7 +307,6 @@ dependencies = [
  "em-node-agent-client",
  "env_logger",
  "ftx-cert-build",
- "hyper",
  "log",
  "mbedtls",
  "pkix",
