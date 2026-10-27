@@ -12,5 +12,5 @@ use common::run_client;
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    run_client::<BaremetalTdx>()
+    run_client::<BaremetalTdx>().await
 }
