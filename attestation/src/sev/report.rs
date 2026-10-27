@@ -244,20 +244,27 @@ impl KeyUsageInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TCBVersion {
-    /// SPL(Security Patch Level) of FMC firmware. This only is present on Turin platforms
+    /// SPL(Security Patch Level) of FMC firmware.
+    /// This only is present on Turin and Venice platforms.
     pub fmc: Option<u8>,
-    /// Boot Loader version
-    pub boot_loader: u8,
+    /// Boot Loader version. Not present in Venice platforms.
+    pub boot_loader: Option<u8>,
     /// Trusted Execution Environment version.
     pub tee: u8,
     /// SNP Firmware Version.
     pub snp: u8,
-    /// CPU Microcode Version.
-    pub microcode: u8,
+    /// CPU Microcode Version. Not present in Venice platforms.
+    pub microcode: Option<u8>,
 }
 
 impl TCBVersion {
-    pub fn new(boot_loader: u8, tee: u8, snp: u8, microcode: u8, fmc: Option<u8>) -> Self {
+    pub fn new(
+        boot_loader: Option<u8>,
+        tee: u8,
+        snp: u8,
+        microcode: Option<u8>,
+        fmc: Option<u8>,
+    ) -> Self {
         TCBVersion {
             boot_loader,
             tee,
@@ -269,10 +276,10 @@ impl TCBVersion {
 
     fn as_iter(&self) -> impl Iterator<Item = Option<u8>> {
         [
-            Some(self.boot_loader),
+            self.boot_loader,
             Some(self.tee),
             Some(self.snp),
-            Some(self.microcode),
+            self.microcode,
             self.fmc,
         ]
         .into_iter()
@@ -282,7 +289,7 @@ impl TCBVersion {
         self.fmc
     }
 
-    pub fn boot_loader(&self) -> u8 {
+    pub fn boot_loader(&self) -> Option<u8> {
         self.boot_loader
     }
 
@@ -294,7 +301,7 @@ impl TCBVersion {
         self.snp
     }
 
-    pub fn microcode(&self) -> u8 {
+    pub fn microcode(&self) -> Option<u8> {
         self.microcode
     }
 }
@@ -321,6 +328,117 @@ impl PartialOrd for TCBVersion {
             }
         }
         Some(cmp_combined)
+    }
+}
+
+/// Extended TCB structure.
+/// The Extended TCB (ETCB) is 256-bit in size and contains the CPU ucode as well as additional
+/// components that could affect the integrity of the Guest.
+/// Only available in VerifiedReport version 6 and Venice architectures.
+#[repr(C)]
+#[repr(packed)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct ExtendedTCBVersion {
+    /// Reserved space
+    _reserved: [u8; 18],
+    /// SVN of ARG
+    pub amd_root_guest: u8,
+    /// DPE Driver version
+    /// SVN of DPE Driver firmware
+    pub dpe_driver: u8,
+    /// FHP Driver version
+    /// SVN of FHP Driver firmware
+    pub fhp_driver: u8,
+    /// ASP OS Driver version
+    /// SVN of ASP OS Driver firmware
+    pub asp_os_driver: u8,
+    /// SoC Driver firmware version
+    /// SVN of SoC Driver firmware
+    pub soc_driver: u8,
+    /// Lowest current patch level of all cores
+    /// SPL (Security Patch Level) of all cores
+    pub microcode: u8,
+    /// Current TMPM firmware version
+    /// SVN of TMPM firmware
+    pub tmpm: u8,
+    /// Current PreEsid driver firmware version
+    /// SVN of PreEsid driver firmware
+    pub pre_esid: u8,
+    /// Current driver boot firmware version
+    /// SVN of driver boot firmware
+    pub boot_driver: u8,
+    /// Current High Availability and Debuggability (HAD) firmware version
+    /// SVN of HAD firmware
+    pub had_driver: u8,
+    /// Current AMD Root of Trust (ART) version
+    /// SVN of ART runtime
+    pub art_rt: u8,
+    /// Current ART FMC version
+    /// SVN of ART FMC
+    pub art_fmc: u8,
+    /// Power Management firmware version
+    /// SVN of MP1 firmware
+    pub mp1: u8,
+    /// Current IP Key Manager firmware version
+    /// SVN of IP Key Manager firmware
+    pub ip_key_manager: u8,
+}
+
+impl ExtendedTCBVersion {
+    pub fn amd_root_guest(&self) -> u8 {
+        self.amd_root_guest
+    }
+
+    pub fn dpe_driver(&self) -> u8 {
+        self.dpe_driver
+    }
+
+    pub fn fhp_driver(&self) -> u8 {
+        self.fhp_driver
+    }
+
+    pub fn asp_os_driver(&self) -> u8 {
+        self.asp_os_driver
+    }
+
+    pub fn soc_driver(&self) -> u8 {
+        self.soc_driver
+    }
+
+    pub fn microcode(&self) -> u8 {
+        self.microcode
+    }
+
+    pub fn tmpm(&self) -> u8 {
+        self.tmpm
+    }
+
+    pub fn pre_esid(&self) -> u8 {
+        self.pre_esid
+    }
+
+    pub fn boot_driver(&self) -> u8 {
+        self.boot_driver
+    }
+
+    pub fn had_driver(&self) -> u8 {
+        self.had_driver
+    }
+
+    pub fn art_rt(&self) -> u8 {
+        self.art_rt
+    }
+
+    pub fn art_fmc(&self) -> u8 {
+        self.art_fmc
+    }
+
+    pub fn mp1(&self) -> u8 {
+        self.mp1
+    }
+
+    pub fn ip_key_manager(&self) -> u8 {
+        self.ip_key_manager
     }
 }
 
@@ -387,7 +505,7 @@ impl TryFrom<u32> for SignatureAlgorithm {
 #[repr(C)]
 pub struct Report {
     /// Version number of attestation report; AMD specification defines this to
-    /// be equal to 2 or 3.
+    /// be equal to 2, 3, 5, or 6
     pub version: u32,
     pub guest_svn: u32,
     pub policy: GuestPolicy,
@@ -454,9 +572,19 @@ pub struct Report {
     pub launch_mitigation_vector: u64,
     /// Value is set to the current verified mitigation vector value (CurrentMitVector).
     pub current_mitigation_vector: u64,
-
-    /// Reserved space; need not be zero.
-    pub _reserved2: [u8; 152],
+    /// Reserved space; must be zero.
+    pub _reserved2: [u8; 24],
+    /// Current ETCB (Extended TCB).
+    /// Only available for VerifiedReport version 6 on Venice platforms.
+    pub current_etcb: ExtendedTCBVersion,
+    /// Launch ETCB (Extended TCB).
+    /// Only available for VerifiedReport version 6 on Venice platforms.
+    pub launch_etcb: ExtendedTCBVersion,
+    /// Committed ETCB (Extended TCB).
+    /// Only available for VerifiedReport version 6 on Venice platforms.
+    pub committed_etcb: ExtendedTCBVersion,
+    /// Reserved space; must be zero.
+    pub _reserved3: [u8; 32],
 
     pub signature: [u8; 512],
 }
@@ -533,6 +661,33 @@ impl Report {
 
     pub fn current_mitigation_vector(&self) -> u64 {
         self.current_mitigation_vector
+    }
+
+    pub fn current_etcb(&self) -> Result<ExtendedTCBVersion, AttestationCoreErr> {
+        if self.version < 5 {
+            return Err(AttestationCoreErr::ReportVerificationError(
+                "Current ETCB is not supported for this report version".into(),
+            ));
+        }
+        Ok(self.current_etcb)
+    }
+
+    pub fn launch_etcb(&self) -> Result<ExtendedTCBVersion, AttestationCoreErr> {
+        if self.version < 5 {
+            return Err(AttestationCoreErr::ReportVerificationError(
+                "Launch ETCB is not supported for this report version".into(),
+            ));
+        }
+        Ok(self.launch_etcb)
+    }
+
+    pub fn committed_etcb(&self) -> Result<ExtendedTCBVersion, AttestationCoreErr> {
+        if self.version < 5 {
+            return Err(AttestationCoreErr::ReportVerificationError(
+                "Committed ETCB is not supported for this report version".into(),
+            ));
+        }
+        Ok(self.committed_etcb)
     }
 
     pub fn vmpl(&self) -> &VMPL {
