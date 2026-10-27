@@ -19,7 +19,7 @@ mbedtls = { workspace = true, features = ["rdrand"] }
 pkix = { workspace = true }
 simple-hyper-client = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 tokio-vsock = { workspace = true }
 
 [[example]]
