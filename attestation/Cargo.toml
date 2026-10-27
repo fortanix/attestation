@@ -7,35 +7,38 @@ edition = "2021"
 license = "MPL-2.0"
 repository = "https://github.com/fortanix/attestation"
 
+[features]
+nvidia = []
+nvidia-evidence = [
+    "nvidia",
+    "nvml",
+] # enables the module used to collect nvidia attestation evidence
+tdx = []
+tdx-guest = ["tdx", "dep:tdx-ql"]
+sev = []
+sev-guest = ["sev", "dep:iocuddle"]
+tpm-snp = []
+tpm-snp-pkix-compat = ["tpm-snp", "sev"]
+tpm-snp-evidence = ["tpm-snp", "nvidia-evidence", "sev-guest"]
+
 [dependencies]
 b64-ct = { workspace = true }
 der = { workspace = true, features = ["alloc", "derive", "oid", "pem"] }
 log = { workspace = true }
 mbedtls = { workspace = true, features = ["std", "time"] }
 nvml = { workspace = true, optional = true }
-pkix = {workspace = true}
+once_cell = { workspace = true }
+pkix = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 sgx-isa = { workspace = true, default-features = true }
-sgx_pkix = {workspace = true}
+sgx_pkix = { workspace = true }
 thiserror = { workspace = true }
 yasna = { workspace = true, features = ["num-bigint", "bit-vec"] }
-once_cell = { workspace = true }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
-tdx-ql = { workspace = true, optional = true }
 # Used for generating reports on SNP, does not compile properly on SGX
 iocuddle = { workspace = true, optional = true }
-
-[features]
-nvidia = []
-nvidia-evidence = ["nvidia", "nvml"] # enables the module used to collect nvidia attestation evidence
-tdx = []
-tdx-guest = ["tdx","dep:tdx-ql"]
-sev = []
-sev-guest = ["sev", "dep:iocuddle"]
-tpm-snp = []
-tpm-snp-pkix-compat = ["tpm-snp", "sev"]
-tpm-snp-evidence = ["tpm-snp", "nvidia-evidence", "sev-guest"]
+tdx-ql = { workspace = true, optional = true }
 
 [[example]]
 name = "tdreport_tool"

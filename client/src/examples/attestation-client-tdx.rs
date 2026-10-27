@@ -9,7 +9,8 @@ use client::error::Result;
 use client::BaremetalTdx;
 use common::run_client;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     env_logger::init();
-    run_client::<BaremetalTdx>()
+    run_client::<BaremetalTdx>().await
 }
