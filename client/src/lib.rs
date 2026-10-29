@@ -11,15 +11,16 @@ pub mod vsock_connector;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use attestation::nitro::csr_format::NITRO_ATTESTATION_OID;
+use attestation::nitro::{get_attestation_report, get_user_data};
 use attestation::nvidia::evidence::get_nvidia_evidence;
 use attestation::tdx::{
     PackedTdxReportGuestV1, TdxReportMeasurements, TdxReportVersion1, TeeReportMac,
 };
 use attestation::tpm_snp::csr_format::baremetal_snp::{AmdSevAttestationBaremetalV1, FqpeCerts};
 use attestation::tpm_snp::csr_format::{CoprocessorAttestationSetV1, CoprocessorAttestationV1};
-use attestation::tpm_snp::pkix_compat::baremetal_snp::{APPCONFIG_ID_OID, BAREMETAL_SNP_OID};
-use der::asn1::OctetString;
-use der::{Decode, Encode};
+use attestation::tpm_snp::pkix_compat::baremetal_snp::BAREMETAL_SNP_OID;
+use der::Decode;
 use em_node_agent_client::models::{
     GetFortanixAttestationRequest, GetFortanixAttestationResponse, IssueCertificateRequest,
 };
@@ -34,6 +35,7 @@ use pkix::{yasna, ToDer};
 use crate::certificate::AppCert;
 use crate::error::Error::*;
 use crate::error::Result;
+use crate::utils::NameBuilderExt;
 use crate::vsock_connector::VsockConnector;
 pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = tokio_vsock::VMADDR_CID_HOST;
 const DEFAULT_NODE_AGENT_VSOCK_ADDR: &str = "http://0.0.0.0:40/";
@@ -42,6 +44,7 @@ const RETRY_DELAY: Duration = Duration::from_secs(1);
 
 pub struct BaremetalSevSnp;
 pub struct BaremetalTdx;
+pub struct Nitro;
 
 pub struct NodeAgentClient {
     client: Client,
@@ -121,12 +124,16 @@ impl NodeAgentClient {
 
 #[async_trait]
 pub trait Attest: Sync + Send {
+    /// Generate evidence and exchange it with the Node Agent for attestation
+    /// and node certificates. This does not populate `app_cert.cert`.
     async fn perform_local_attestation(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
         app_config_id: Option<Vec<u8>>,
     ) -> Result<GetFortanixAttestationResponse>;
 
+    /// Generate evidence and request an application certificate using the key
+    /// in `app_cert`, storing the issued certificate in `app_cert.cert`.
     async fn attest_and_request_app_cert(
         app_cert: &mut AppCert,
         node_agent_cli: &NodeAgentClient,
@@ -214,36 +221,10 @@ impl BaremetalSevSnp {
                 e
             ))
         })?;
-        let subject = match appconfig_id {
-            Some(id) => {
-                let appconfig_id_value = OctetString::new(id)
-                    .map_err(|e| {
-                        AppCertErr(format!(
-                            "failed to create appconfig ID octet string : {:?}",
-                            e
-                        ))
-                    })?
-                    .to_der()
-                    .map_err(|e| {
-                        ConversionErr(format!("failed to convert appconfig ID to der : {:?}", e))
-                    })?;
-                let appconfig_id_der: TaggedDerValue =
-                    yasna::parse_der(&appconfig_id_value, |reader| reader.read_tagged_der())
-                        .map_err(|e| {
-                            ConversionErr(format!(
-                                "failed to convert appconfig ID to tagged der : {:?}",
-                                e
-                            ))
-                        })?;
-                NameBuilder::new()
-                    .add_custom_oid(BAREMETAL_SNP_OID.clone(), attestation_report_der)
-                    .add_custom_oid(APPCONFIG_ID_OID.clone(), appconfig_id_der)
-                    .build_subject()
-            }
-            None => NameBuilder::new()
-                .add_custom_oid(BAREMETAL_SNP_OID.clone(), attestation_report_der)
-                .build_subject(),
-        };
+        let subject = NameBuilder::new()
+            .add_attestation_report(BAREMETAL_SNP_OID.clone(), attestation_report_der)
+            .add_appconfig_id(appconfig_id)?
+            .build_subject();
 
         let pk_key = &mut appcert.key;
         let csr = Csr::mbedtls_crypto_builder()
@@ -271,43 +252,14 @@ impl BaremetalTdx {
                 ))
             })?;
 
-        let subject = match appconfig_id {
-            Some(id) => {
-                let appconfig_id_value = OctetString::new(id)
-                    .map_err(|e| {
-                        AppCertErr(format!(
-                            "failed to create appconfig ID octet string : {:?}",
-                            e
-                        ))
-                    })?
-                    .to_der()
-                    .map_err(|e| {
-                        ConversionErr(format!("failed to convert appconfig ID to der : {:?}", e))
-                    })?;
-                let appconfig_id_der: TaggedDerValue =
-                    yasna::parse_der(&appconfig_id_value, |reader| reader.read_tagged_der())
-                        .map_err(|e| {
-                            ConversionErr(format!(
-                                "failed to convert appconfig ID to tagged der : {:?}",
-                                e
-                            ))
-                        })?;
-                NameBuilder::new()
-                    .add_custom_oid(
-                        TdxReportMeasurements::<TdxReportVersion1, CoprocessorAttestationSetV1>::oid().clone(),
-                        tdx_report_tagged_der.clone(),
-                    )
-                    .add_custom_oid(APPCONFIG_ID_OID.clone(), appconfig_id_der)
-                    .build_subject()
-            }
-            None => NameBuilder::new()
-                .add_custom_oid(
-                    TdxReportMeasurements::<TdxReportVersion1, CoprocessorAttestationSetV1>::oid()
-                        .clone(),
-                    tdx_report_tagged_der.clone(),
-                )
-                .build_subject(),
-        };
+        let subject = NameBuilder::new()
+            .add_attestation_report(
+                TdxReportMeasurements::<TdxReportVersion1, CoprocessorAttestationSetV1>::oid()
+                    .clone(),
+                tdx_report_tagged_der,
+            )
+            .add_appconfig_id(appconfig_id)?
+            .build_subject();
 
         let tee_report_mac_attribute = Attribute {
             oid: TeeReportMac::oid().clone(),
@@ -409,5 +361,184 @@ impl Attest for BaremetalTdx {
         node_agent_cli
             .get_fortanix_attestation(Some(csr), None)
             .await
+    }
+}
+
+impl Nitro {
+    fn get_attestation_csr(
+        app_cert: &mut AppCert,
+        document: Vec<u8>,
+        alt_names: Option<Vec<String>>,
+    ) -> Result<String> {
+        app_cert.request_app_cert_csr(
+            vec![Attribute {
+                oid: NITRO_ATTESTATION_OID.clone(),
+                value: vec![yasna::construct_der(|writer| writer.write_bytes(&document)).into()],
+            }],
+            alt_names,
+        )
+    }
+
+    fn generate_csr(
+        app_cert: &mut AppCert,
+        app_config_id: Option<&[u8]>,
+        alt_names: Option<Vec<String>>,
+    ) -> Result<String> {
+        let pub_key = app_cert
+            .key
+            .write_public_der_vec()
+            .map_err(|e| CryptoErr(format!("failed to encode public key: {:?}", e)))?;
+        let user_data = get_user_data(&pub_key, app_config_id).map_err(AttestErr)?;
+        let document = get_attestation_report(&user_data).map_err(AttestErr)?;
+        Self::get_attestation_csr(app_cert, document, alt_names)
+    }
+}
+
+#[async_trait]
+impl Attest for Nitro {
+    async fn perform_local_attestation(
+        _app_cert: &mut AppCert,
+        _node_agent_cli: &NodeAgentClient,
+        _app_config_id: Option<Vec<u8>>,
+    ) -> Result<GetFortanixAttestationResponse> {
+        Err(LocalAttestErr(
+            "local attestation is not supported for Nitro".into(),
+        ))
+    }
+
+    // Generate hardware evidence through NSM and embed it directly in the
+    // application CSR, following salmiac's certificate issuance protocol.
+    async fn attest_and_request_app_cert(
+        app_cert: &mut AppCert,
+        node_agent_cli: &NodeAgentClient,
+        app_config_id: Option<Vec<u8>>,
+        alt_names: Option<Vec<String>>,
+    ) -> Result<()> {
+        let csr = Self::generate_csr(app_cert, app_config_id.as_deref(), alt_names)?;
+        let cert = node_agent_cli.get_fortanix_certificate(csr).await?;
+        app_cert.cert = Some(cert);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use attestation::tpm_snp::pkix_compat::baremetal_snp::APPCONFIG_ID_OID;
+    use pkix::{
+        pem::pem_to_der, pkcs10::DerCertificationRequest, types::ObjectIdentifier, FromBer,
+    };
+
+    use super::*;
+
+    #[test]
+    fn nitro_csr_attestation_document() {
+        let document = vec![1, 2, 3, 4, 5, 6, 7, 8];
+        let mut app_cert = AppCert::init_with_rsa_key_size(2048).unwrap();
+        let pem = Nitro::get_attestation_csr(&mut app_cert, document.clone(), None).unwrap();
+        let csr = parse_csr(&pem);
+        find_and_cmp_attribute(&csr, &NITRO_ATTESTATION_OID, document);
+    }
+
+    #[test]
+    fn tdx_csr_attestation_document() {
+        let report = vec![0xab; 1024];
+        let coprocessors: CoprocessorAttestationSetV1 = Vec::new().try_into().unwrap();
+        let packed_report =
+            PackedTdxReportGuestV1::from_mock_report(&report, coprocessors).unwrap();
+        let (tee_report_mac, tdx_report) = packed_report.build_decoupled_report().unwrap();
+        let tee_report_der = tee_report_mac.to_der();
+        let tdx_report_der = tdx_report.to_der();
+        let appconfig_id = vec![0xa, 5, 5, 1, 1, 0xd];
+        let mut app_cert = AppCert::init_with_rsa_key_size(2048).unwrap();
+        let pem = BaremetalTdx::get_local_attestation_csr(
+            &mut app_cert,
+            tee_report_der.clone(),
+            tdx_report_der.clone(),
+            Some(&appconfig_id),
+        )
+        .unwrap();
+
+        let csr = parse_csr(&pem);
+        find_and_cmp_attribute(
+            &csr,
+            TeeReportMac::oid(),
+            tee_report_mac.as_ref().as_ref().to_vec(),
+        );
+
+        let report_oid =
+            TdxReportMeasurements::<TdxReportVersion1, CoprocessorAttestationSetV1>::oid();
+        find_and_cmp_subject(&csr, report_oid, tdx_report_der);
+        let config_der = yasna::construct_der(|writer| writer.write_bytes(&appconfig_id));
+        find_and_cmp_subject(&csr, &APPCONFIG_ID_OID, config_der);
+    }
+
+    #[test]
+    fn snp_csr_attestation_document() {
+        use der::{asn1::OctetString, Encode};
+
+        let report = AmdSevAttestationBaremetalV1 {
+            attestation_report: OctetString::new(vec![0xab; 1184]).unwrap(),
+            coprocessors: Vec::new().try_into().unwrap(),
+        };
+        let report_der = Encode::to_der(&report).unwrap();
+        let appconfig_id = vec![0xa, 5, 5, 1, 1, 0xd];
+        let mut app_cert = AppCert::init_with_rsa_key_size(2048).unwrap();
+        let pem =
+            BaremetalSevSnp::get_local_attestation_csr(&mut app_cert, &report, Some(&appconfig_id))
+                .unwrap();
+
+        let csr = parse_csr(&pem);
+        find_and_cmp_subject(&csr, &BAREMETAL_SNP_OID, report_der);
+        let config_der = yasna::construct_der(|writer| writer.write_bytes(&appconfig_id));
+        find_and_cmp_subject(&csr, &APPCONFIG_ID_OID, config_der);
+    }
+
+    fn parse_csr(csr_pem: &str) -> DerCertificationRequest {
+        let der = pem_to_der(csr_pem, Some(PEM_CERTIFICATE_REQUEST)).unwrap();
+        DerCertificationRequest::from_ber(&der).unwrap()
+    }
+
+    fn find_and_cmp_attribute(
+        csr: &DerCertificationRequest,
+        oid: &ObjectIdentifier,
+        expected: Vec<u8>,
+    ) {
+        let attributes = find_attribute_from_csr(csr, oid);
+        assert_eq!(attributes.len(), 1);
+        assert_eq!(attributes[0].value.len(), 1);
+        let decoded =
+            yasna::parse_der(attributes[0].value[0].as_ref(), |r| r.read_bytes()).unwrap();
+        assert_eq!(decoded, expected);
+    }
+
+    // Compare the full DER value so both structured reports and OCTET STRINGs work.
+    fn find_and_cmp_subject(
+        csr: &DerCertificationRequest,
+        oid: &ObjectIdentifier,
+        expected: Vec<u8>,
+    ) {
+        let subjects = csr
+            .reqinfo
+            .subject
+            .value
+            .iter()
+            .filter(|(subject_oid, _)| subject_oid == oid)
+            .collect::<Vec<_>>();
+        assert_eq!(subjects.len(), 1);
+        assert_eq!(subjects[0].1.to_der(), expected);
+    }
+
+    fn find_attribute_from_csr(
+        csr: &DerCertificationRequest,
+        oid: &ObjectIdentifier,
+    ) -> Vec<Attribute<'static>> {
+        let attributes = csr
+            .reqinfo
+            .attributes
+            .iter()
+            .filter(|attribute| attribute.oid == *oid)
+            .cloned()
+            .collect::<Vec<_>>();
+        attributes
     }
 }
