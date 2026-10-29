@@ -29,12 +29,16 @@ pub struct AppCert {
 
 impl AppCert {
     pub fn init() -> Result<Self> {
-        let key = Self::create_cert_keypair()?;
+        Self::init_with_rsa_key_size(RSA_KEY_SIZE)
+    }
+
+    pub fn init_with_rsa_key_size(rsa_key_size: u32) -> Result<Self> {
+        let key = Self::create_cert_keypair(rsa_key_size)?;
         Ok(AppCert { key, cert: None })
     }
 
-    fn create_cert_keypair() -> Result<Pk> {
-        Pk::generate_rsa(&mut FtxRng, RSA_KEY_SIZE, RSA_EXPONENT).map_err(|e| {
+    fn create_cert_keypair(rsa_key_size: u32) -> Result<Pk> {
+        Pk::generate_rsa(&mut FtxRng, rsa_key_size, RSA_EXPONENT).map_err(|e| {
             CryptoErr(format!(
                 "failed to generate cert key pair : {:?}",
                 e.to_string()
