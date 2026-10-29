@@ -537,7 +537,7 @@ mod tests {
             .attributes
             .iter()
             .filter(|attribute| attribute.oid == *oid)
-            .map(|a| a.clone())
+            .cloned()
             .collect::<Vec<_>>();
         attributes
     }
