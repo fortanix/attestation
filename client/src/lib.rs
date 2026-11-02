@@ -64,6 +64,10 @@ impl NodeAgentClient {
             ))
         })?;
 
+        Self::init_with_client(client).await
+    }
+
+    pub async fn init_with_client(client: Client) -> Result<Self> {
         for attempt in 1..=MAX_RETRIES {
             match client.get_agent_version().await {
                 Ok(version) => {
