@@ -1,6 +1,6 @@
 [package]
 name = "attestation"
-description = "Attestation functionality for dcap, nvidia, sev, and tpm-snp attestation"
+description = "Attestation functionality for dcap, nvidia, sev, nitro and tpm-snp attestation"
 version = "0.2.0"
 authors = ["Fortanix, Inc."]
 edition = "2021"
