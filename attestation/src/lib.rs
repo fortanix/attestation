@@ -15,4 +15,7 @@ pub mod nvidia;
 #[cfg(feature = "tpm-snp")]
 pub mod tpm_snp;
 
+#[cfg(feature = "nitro")]
+pub mod nitro;
+
 pub mod utils;
