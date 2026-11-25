@@ -12,7 +12,8 @@ fn main() {
 fn build_nvml_ext() {
     use std::{env, path::PathBuf, process::Command};
 
-    let target = env::var("TARGET").unwrap();
+    // Use the GNU runtime for NVML independently of the outer build's target.
+    let target = "x86_64-unknown-linux-gnu";
     let profile = env::var("PROFILE").unwrap();
     let helper_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("../nvml-ext");
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
@@ -21,7 +22,6 @@ fn build_nvml_ext() {
     for path in [
         "../Cargo.toml",
         "../Cargo.lock",
-        "../nvml-ext/.cargo/config.toml",
         "../nvml-ext/Cargo.toml",
         "../nvml-ext/src",
         "Cargo.toml",
@@ -36,17 +36,26 @@ fn build_nvml_ext() {
     cargo
         .current_dir(helper_dir)
         .args(["build", "--locked"])
-        .args(["--bin", "nvml-ext", "--target", &target, "--target-dir"])
+        .args(["--bin", "nvml-ext", "--target", target, "--target-dir"])
         .arg(&target_dir);
     if profile == "release" {
         cargo.arg("--release");
     }
 
-    if env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("musl") {
-        // Cargo passes RUSTFLAGS to build scripts in encoded form.
-        cargo
-            .env_remove("RUSTFLAGS")
-            .env_remove("CARGO_ENCODED_RUSTFLAGS");
+    for (name, _) in env::vars_os() {
+        let key = name.to_string_lossy();
+        let compiler_key = key
+            .strip_prefix("HOST_")
+            .or_else(|| key.strip_prefix("TARGET_"))
+            .unwrap_or(&key);
+        if (key.starts_with("CARGO_") && key != "CARGO_HOME")
+            || matches!(key.as_ref(), "CARGO" | "RUSTFLAGS")
+            || matches!(compiler_key, "CC" | "CFLAGS")
+            || compiler_key.starts_with("CC_")
+            || compiler_key.starts_with("CFLAGS_")
+        {
+            cargo.env_remove(name);
+        }
     }
 
     let status = cargo.status().expect("failed to start the nvml-ext build");

@@ -10,19 +10,17 @@ for musl, run:
 cargo build -p client --example attestation-client-tdx --features nvml-ext --target x86_64-unknown-linux-musl
 ```
 
-The attestation library embeds the standalone `nvml-ext` executable. On the
-first NVIDIA evidence request in each process, the library saves it as
-`nvml-ext-*` in the current working directory and reuses that executable for
-later requests. The working directory must be writable and allow execution.
-The helper needs the dynamic loader selected by your linker and the NVIDIA
-driver's NVML shared library at runtime.
+The attestation library builds and embeds `nvml-ext` for
+`x86_64-unknown-linux-gnu`. On the first NVIDIA evidence request in each
+process, the library saves it as `nvml-ext-*` in the current working directory
+and reuses that executable for later requests. The working directory must be
+writable and allow execution. The embedded helper needs the x86-64 GNU dynamic
+loader and the NVIDIA driver's NVML shared library at runtime.
 
-To build the helper by itself for musl, run Cargo from the `nvml-ext` directory
-so it loads the helper's local configuration.
+To build the helper by itself, run the following from the workspace root.
 
 ```bash
-cd nvml-ext
-cargo build --target x86_64-unknown-linux-musl
+cargo build -p nvml-ext --target x86_64-unknown-linux-gnu
 ```
 
 The helper accepts the raw 32-byte attestation nonce on standard input and
