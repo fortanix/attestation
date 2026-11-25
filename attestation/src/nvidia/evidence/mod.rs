@@ -3,6 +3,9 @@
 |* the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 pub mod error;
+#[cfg(feature = "nvml-ext")]
+mod external;
+
 use log::debug;
 use nvml::{Device, Nvml};
 
@@ -58,10 +61,20 @@ pub fn get_nvidia_device_evidence(
 
 /// Retrieves attestation evidence for all available NVIDIA GPU devices on the system.
 ///
-/// This function initializes the NVIDIA Management Library (NVML) and collects the
-/// attestation evidence for each GPU device available on the system. The evidence for
-/// each device includes the attestation report and certificate chain.
+/// With the `nvml-ext` feature, collection runs in the standalone helper process.
 pub fn get_nvidia_evidence(nonce: &[u8; 32]) -> Result<Vec<NvidiaEvidence>> {
+    #[cfg(feature = "nvml-ext")]
+    {
+        external::get_nvidia_evidence(nonce)
+    }
+    #[cfg(not(feature = "nvml-ext"))]
+    {
+        get_nvidia_evidence_in_process(nonce)
+    }
+}
+
+/// Collects the report and certificate chain for every GPU by calling NVML in this process.
+pub fn get_nvidia_evidence_in_process(nonce: &[u8; 32]) -> Result<Vec<NvidiaEvidence>> {
     let nvml = initialize_nvml()?;
     let device_count = nvml.device_count().map_err(GpuError::DeviceError)?;
     debug!("discovered `{device_count}` GPU devices.");

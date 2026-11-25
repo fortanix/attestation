@@ -1,5 +1,38 @@
 # Fortanix Attestation
 
+## NVIDIA evidence with musl
+
+Enable the `nvml-ext` Cargo feature on `attestation` or `client` to collect NVIDIA GPU
+evidence in a separate process. For example, to build the TDX attestation client
+for musl, run:
+
+```bash
+cargo build -p client --example attestation-client-tdx --features nvml-ext --target x86_64-unknown-linux-musl
+```
+
+The attestation library embeds the standalone `nvml-ext` executable. On the
+first NVIDIA evidence request in each process, the library saves it as
+`nvml-ext-*` in the current working directory and reuses that executable for
+later requests. The working directory must be writable and allow execution.
+The helper needs the dynamic loader selected by your linker and the NVIDIA
+driver's NVML shared library at runtime.
+
+To build the helper by itself for musl, run Cargo from the `nvml-ext` directory
+so it loads the helper's local configuration.
+
+```bash
+cd nvml-ext
+cargo build --target x86_64-unknown-linux-musl
+```
+
+The helper accepts the raw 32-byte attestation nonce on standard input and
+writes a JSON array of GPU evidence to standard output. To try a standalone
+build from its output directory, pipe in a nonce.
+
+```bash
+head -c 32 /dev/urandom | ./nvml-ext
+```
+
 ## Clippy
 
 Please run
