@@ -65,7 +65,7 @@ pub fn get_nvidia_device_evidence(
 pub fn get_nvidia_evidence(nonce: &[u8; 32]) -> Result<Vec<NvidiaEvidence>> {
     #[cfg(feature = "nvml-ext")]
     {
-        external::get_nvidia_evidence(nonce)
+        external::get_nvidia_evidence_via_nvml_ext(nonce)
     }
     #[cfg(not(feature = "nvml-ext"))]
     {

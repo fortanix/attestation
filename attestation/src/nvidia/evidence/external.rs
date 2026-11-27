@@ -42,7 +42,7 @@ fn helper_path() -> io::Result<&'static Path> {
     Ok(path)
 }
 
-pub(super) fn get_nvidia_evidence(nonce: &[u8; 32]) -> Result<Vec<NvidiaEvidence>> {
+pub(super) fn get_nvidia_evidence_via_nvml_ext(nonce: &[u8; 32]) -> Result<Vec<NvidiaEvidence>> {
     let path = helper_path().map_err(|error| nvml_ext_error("save the executable", error))?;
     let mut helper = Command::new(path)
         .stdin(Stdio::piped())
