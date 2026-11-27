@@ -62,5 +62,5 @@ fn build_nvml_ext() {
     assert!(status.success(), "nvml-ext build failed with {status}");
 
     let helper = target_dir.join(target).join(profile).join("nvml-ext");
-    println!("cargo:rustc-env=NVML_EXT_PATH={}", helper.display());
+    println!("cargo:rustc-env=NVML_EXT_BUILD_PATH={}", helper.display());
 }

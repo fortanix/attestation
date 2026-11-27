@@ -10,8 +10,10 @@ use once_cell::sync::OnceCell;
 
 use super::{GpuError, NvidiaEvidence, Result};
 
-static HELPER: &[u8] = include_bytes!(env!("NVML_EXT_PATH"));
-static HELPER_PATH: OnceCell<PathBuf> = OnceCell::new();
+// The embedded NVML_EXT executable built by the build script.
+static NVML_EXT_BIN: &[u8] = include_bytes!(env!("NVML_EXT_BUILD_PATH"));
+// The cached path to the NVML_EXT executable on disk.
+static NVML_EXT_PATH: OnceCell<PathBuf> = OnceCell::new();
 
 fn nvml_ext_error(operation: &str, source: io::Error) -> GpuError {
     GpuError::NvmlExtError {
@@ -20,13 +22,16 @@ fn nvml_ext_error(operation: &str, source: io::Error) -> GpuError {
     }
 }
 
+// Writes the embedded NVML_EXT_BIN executable to disk on the first
+// successful call and returns its path. Subsequent calls return the
+// cached path.
 fn helper_path() -> io::Result<&'static Path> {
-    let path = HELPER_PATH.get_or_try_init(|| {
+    let path = NVML_EXT_PATH.get_or_try_init(|| {
         let mut file = tempfile::Builder::new()
             .prefix("nvml-ext-")
             .suffix(std::env::consts::EXE_SUFFIX)
             .tempfile_in(std::env::current_dir()?)?;
-        file.write_all(HELPER)?;
+        file.write_all(NVML_EXT_BIN)?;
 
         #[cfg(unix)]
         {
