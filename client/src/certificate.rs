@@ -20,7 +20,7 @@ const RSA_KEY_SIZE: u32 = 3072;
 const RSA_EXPONENT: u32 = 0x10001;
 const APP_CERT_FILE_NAME_DEFAULT: &str = "/opt/fortanix/attestation-client/cert.pem";
 const APP_CERT_KEY_NAME_DEFAULT: &str = "/opt/fortanix/attestation-client/key.pem";
-pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = vsock::VMADDR_CID_HOST;
+pub const DEFAULT_NODE_AGENT_VSOCK_CID: u32 = tokio_vsock::VMADDR_CID_HOST;
 
 pub struct AppCert {
     pub key: Pk,
