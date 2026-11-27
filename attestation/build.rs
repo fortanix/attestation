@@ -42,6 +42,8 @@ fn build_nvml_ext() {
         cargo.arg("--release");
     }
 
+    // Prevent the `nvml-ext` build from inheriting the current
+    // build's Cargo and compiler settings.
     for (name, _) in env::vars_os() {
         let key = name.to_string_lossy();
         let compiler_key = key
