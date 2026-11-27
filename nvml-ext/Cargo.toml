@@ -1,0 +1,12 @@
+[package]
+name = "nvml-ext"
+description = "Standalone NVIDIA GPU attestation evidence collector"
+version = "0.1.0"
+authors = ["Fortanix, Inc."]
+edition = "2021"
+license = "MPL-2.0"
+repository = "https://github.com/fortanix/attestation"
+
+[dependencies]
+attestation = { path = "../attestation", features = ["nvidia-evidence"] }
+serde_json = { workspace = true }

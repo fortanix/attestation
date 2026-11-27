@@ -1,7 +1,7 @@
 [package]
 name = "attestation"
 description = "Attestation functionality for dcap, nvidia, sev, nitro and tpm-snp attestation"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Fortanix, Inc."]
 edition = "2021"
 license = "MPL-2.0"
@@ -15,6 +15,7 @@ nvidia-evidence = [
     "nvidia",
     "nvml",
 ] # enables the module used to collect nvidia attestation evidence
+nvml-ext = ["nvidia-evidence", "dep:serde_json", "dep:tempfile", "dep:process_control"]
 tdx = []
 tdx-guest = ["tdx", "dep:tdx-ql"]
 sev = []
@@ -32,10 +33,13 @@ mbedtls = { workspace = true, features = ["std", "time"] }
 nvml = { workspace = true, optional = true }
 once_cell = { workspace = true }
 pkix = { workspace = true }
+process_control = { version = "5", optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_bytes = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 sgx-isa = { workspace = true, default-features = true }
 sgx_pkix = { workspace = true }
+tempfile = { version = "3", optional = true }
 thiserror = { workspace = true }
 yasna = { workspace = true, features = ["num-bigint", "bit-vec"] }
 

@@ -15,6 +15,12 @@ pub enum GpuError {
     InitError(NvmlError),
     #[error("Gpu attestation report failure: `{0}`")]
     ReportError(NvmlError),
+    #[error("nvml-ext failed to {operation}")]
+    NvmlExtError {
+        operation: String,
+        #[source]
+        source: std::io::Error,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, GpuError>;
