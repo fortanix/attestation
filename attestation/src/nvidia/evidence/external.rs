@@ -16,7 +16,7 @@ static HELPER_PATH: OnceCell<PathBuf> = OnceCell::new();
 fn nvml_ext_error(operation: &str, source: io::Error) -> GpuError {
     GpuError::NvmlExtError {
         operation: operation.to_owned(),
-        source: Some(source),
+        source,
     }
 }
 

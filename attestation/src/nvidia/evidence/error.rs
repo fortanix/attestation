@@ -15,14 +15,11 @@ pub enum GpuError {
     InitError(NvmlError),
     #[error("Gpu attestation report failure: `{0}`")]
     ReportError(NvmlError),
-    #[error(
-        "nvml-ext failed to {operation}{reason}",
-        reason = .source.as_ref().map(|error| format!(": {error}")).unwrap_or_default()
-    )]
+    #[error("nvml-ext failed to {operation}")]
     NvmlExtError {
         operation: String,
         #[source]
-        source: Option<std::io::Error>,
+        source: std::io::Error,
     },
 }
 
