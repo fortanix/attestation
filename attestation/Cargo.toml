@@ -15,7 +15,7 @@ nvidia-evidence = [
     "nvidia",
     "nvml",
 ] # enables the module used to collect nvidia attestation evidence
-nvml-ext = ["nvidia-evidence", "dep:serde_json", "dep:tempfile"]
+nvml-ext = ["nvidia-evidence", "dep:serde_json", "dep:tempfile", "dep:process_control"]
 tdx = []
 tdx-guest = ["tdx", "dep:tdx-ql"]
 sev = []
@@ -33,6 +33,7 @@ mbedtls = { workspace = true, features = ["std", "time"] }
 nvml = { workspace = true, optional = true }
 once_cell = { workspace = true }
 pkix = { workspace = true }
+process_control = { version = "5", optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_bytes = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }

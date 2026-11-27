@@ -5,8 +5,10 @@
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::time::Duration;
 
 use once_cell::sync::OnceCell;
+use process_control::{ChildExt, Control};
 
 use super::{GpuError, NvidiaEvidence, Result};
 
@@ -14,6 +16,8 @@ use super::{GpuError, NvidiaEvidence, Result};
 static NVML_EXT_BIN: &[u8] = include_bytes!(env!("NVML_EXT_BUILD_PATH"));
 // The cached path to the NVML_EXT executable on disk.
 static NVML_EXT_PATH: OnceCell<PathBuf> = OnceCell::new();
+// The maximum time allowed for the NVML_EXT executable to exit.
+static NVML_EXT_TIMEOUT: Duration = Duration::from_secs(30);
 
 fn nvml_ext_error(operation: &str, source: io::Error) -> GpuError {
     GpuError::NvmlExtError {
@@ -54,11 +58,24 @@ pub(super) fn get_nvidia_evidence_via_nvml_ext(nonce: &[u8; 32]) -> Result<Vec<N
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|error| nvml_ext_error("start the executable", error))?;
+        .map_err(|error| nvml_ext_error("start the nvml-ext executable", error))?;
+
+    // Feed the nonce to nxml-ext's stdin.
     let nonce_result = helper.stdin.take().unwrap().write_all(nonce);
+
     let output = helper
-        .wait_with_output()
-        .map_err(|error| nvml_ext_error("read the process output", error))?;
+        .controlled_with_output()
+        .time_limit(NVML_EXT_TIMEOUT)
+        .terminate_for_timeout()
+        .strict_errors()
+        .wait()
+        .map_err(|error| nvml_ext_error("read the process output", error))?
+        .ok_or_else(|| {
+            nvml_ext_error(
+                "collect GPU evidence",
+                io::Error::new(io::ErrorKind::TimedOut, "nvml-ext helper timed out"),
+            )
+        })?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let reason = format!("exited with {}\n{stderr}", output.status);
